@@ -1,0 +1,20 @@
+path:
+  ckpt_path: "./output/ckpt/InfoRe1"
+  log_path: "./output/log/InfoRe1"
+  result_path: "./output/result/InfoRe1"
+optimizer:
+  batch_size: 4
+  betas: [0.9, 0.98]
+  eps: 0.000000001
+  weight_decay: 0.0
+  grad_clip_thresh: 1.0
+  grad_acc_step: 4
+  warm_up_step: 4000
+  anneal_steps: [150000, 220000, 280000]
+  anneal_rate: 0.3
+step:
+  total_step: 300000
+  log_step: 50
+  synth_step: 500
+  val_step: 1000
+  save_step: 10000
