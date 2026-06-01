@@ -10,7 +10,7 @@ Keep FastSpeech2 architecture unchanged while adapting data pipeline and text fr
 
 - `scripts/build_ascii_lexicon.py`
 - `scripts/run_infore1_alignment.ps1`
-- `requirements-py310.txt`
+- `requirements-py310.txt` (removed in this clean branch)
 
 These files belonged to an older ASCII-lexicon/MFA branch and are no longer used in the current Vietnamese pipeline.
 
@@ -165,3 +165,48 @@ This is the primary requirements file for the current environment workflow.
 - If checkpoint is still missing, code prints a clear instruction to run:
   - `python scripts/download_hifigan_pretrained.py`
 - This keeps repo lighter while still supporting high-quality wav inference when needed.
+
+## Kaggle Notebook
+
+### Added
+
+- `kaggle_fastspeech2vn.ipynb`
+
+### What it does
+
+- Provides end-to-end Kaggle flow:
+  - clone repo
+  - install dependencies
+  - download InfoRe1 dataset
+  - prepare/preprocess/train
+  - download HiFi-GAN pretrained weights
+  - infer with latest checkpoint automatically
+
+## Local Runbook
+
+### Added
+
+- `LOCAL_TRAIN_GUIDE.md`
+
+### What it does
+
+- Step-by-step local instructions from dependency install to:
+  - data download
+  - alignment preparation
+  - preprocess
+  - training
+  - high-quality wav inference
+
+## Remote Service Utilities
+
+### Added
+
+- `api/train_infer_api.py`
+- `api/embed_api.py`
+- `scripts/start_ngrok_services.py`
+- `NGROK_SERVICES.md`
+
+### What it does
+
+- Exposes train/infer API (port 8001) and embed API (port 8002).
+- Opens ngrok public tunnels and keeps services alive for remote usage.
