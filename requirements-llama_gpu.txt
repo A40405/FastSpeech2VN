@@ -20,3 +20,4 @@ requests==2.32.5
 fastapi==0.115.0
 uvicorn==0.30.6
 pyngrok==7.2.0
+gdown==5.2.0

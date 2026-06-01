@@ -149,3 +149,19 @@ This avoids relying on `.cache/huggingface` as primary dataset storage.
 
 This is the primary requirements file for the current environment workflow.
 
+## HiFi-GAN Weight Management (Light Repo + Good WAV Inference)
+
+### Added
+
+- `scripts/download_hifigan_pretrained.py`
+
+### Updated
+
+- `utils/model.py`
+
+### What changed
+
+- If `hifigan/generator_*.pth.tar` is missing but `.zip` exists, code auto-extracts `.zip` before loading vocoder.
+- If checkpoint is still missing, code prints a clear instruction to run:
+  - `python scripts/download_hifigan_pretrained.py`
+- This keeps repo lighter while still supporting high-quality wav inference when needed.

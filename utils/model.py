@@ -1,5 +1,6 @@
 import os
 import json
+import zipfile
 
 import torch
 import numpy as np
@@ -70,7 +71,16 @@ def get_vocoder(config, device):
             ckpt_path = "hifigan/generator_universal.pth.tar"
         else:
             return None
+        zip_ckpt_path = ckpt_path + ".zip"
+        if not os.path.exists(ckpt_path) and os.path.exists(zip_ckpt_path):
+            with zipfile.ZipFile(zip_ckpt_path, "r") as zf:
+                zf.extractall("hifigan")
         if not os.path.exists(ckpt_path):
+            print(
+                "[HiFi-GAN] Missing checkpoint: {}. "
+                "Run `python scripts/download_hifigan_pretrained.py` to download."
+                .format(ckpt_path)
+            )
             return None
         ckpt = torch.load(ckpt_path, map_location=device)
         vocoder.load_state_dict(ckpt["generator"])
