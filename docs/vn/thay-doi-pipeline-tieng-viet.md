@@ -1,67 +1,74 @@
-﻿# Thay doi pipeline tieng Viet
+﻿# Thay đổi pipeline tiếng Việt
 
-Tai lieu nay tom tat cac thay doi chinh duoc them vao tren nen repo goc `ming024/FastSpeech2`.
+Tài liệu này tóm tắt các thay đổi chính được thêm vào trên nền repo gốc `ming024/FastSpeech2`.
 
-## Muc tieu chinh
+## Mục tiêu chính
 
-Giu nguyen kien truc FastSpeech2, nhung dieu chinh du lieu, text frontend va workflow de train tieng Viet voi `doof-ferb/infore1_25hours`.
+Giữ nguyên kiến trúc FastSpeech2, nhưng điều chỉnh dữ liệu, text frontend và workflow để train tiếng Việt với `doof-ferb/infore1_25hours`.
 
-## Cac thay doi lon
+## Các thay đổi lớn
 
-### Frontend tieng Viet
+### Frontend tiếng Việt
 
-- them `text/vietnamese.py`
-- thay phone inventory cu dang `on_ / v_ / cod_ / tone_` bang phone inventory tieng Viet kieu IPA
-- giu `phonemize_text()` dang rule-based de xu ly transcript tieng Viet, nhung dau ra bay gio la IPA-style va huong theo cach to chuc lexicon cua ViMFA
+- thêm `text/vietnamese.py`
+- thay phone inventory cũ dạng `on_ / v_ / cod_ / tone_` bằng phone inventory tiếng Việt kiểu IPA
+- giữ `phonemize_text()` dạng rule-based để xử lý transcript tiếng Việt, nhưng đầu ra bây giờ là IPA-style và hướng theo cách tổ chức lexicon của `ViMFA`
 
-### Quy trinh tai dataset
+### Mức độ tận dụng ViMFA
 
-- viet lai `scripts/download_infore1_dataset.py`
-- dataset duoc tai truc tiep vao workspace cua du an thay vi phu thuoc `.cache/huggingface`
-- file giai nen duoc dat trong `corpus/infore1_25hours/`
+- repo hiện tại học theo hướng tổ chức của `ViMFA`: IPA-style lexicon, workflow `lexicon -> MFA -> TextGrid`, và tài liệu hóa rõ frontend tiếng Việt
+- repo chưa bê nguyên các tài nguyên trọng tâm của `ViMFA` như G2P model đã train, acoustic model đã train, hay toàn bộ phone-set chuẩn hóa của repo đó
+- vì vậy bản hiện tại nên được hiểu là `ViMFA-inspired IPA pipeline`, chưa phải là một bản tích hợp đầy đủ `ViMFA`
 
-### Chuan bi raw-data cho InfoRe1
+### Quy trình tải dataset
 
-- them `preprocessor/infore1.py`
-- cap nhat `prepare_align.py` de ho tro `InfoRe1`
-- buoc raw preparation se tao `.wav`, `.lab` va `.phones`
+- viết lại `scripts/download_infore1_dataset.py`
+- dataset được tải trực tiếp vào workspace của dự án thay vì phụ thuộc `.cache/huggingface`
+- file giải nén được đặt trong `corpus/infore1_25hours/`
 
-### Duong bootstrap alignment
+### Chuẩn bị raw-data cho InfoRe1
 
-- cap nhat `scripts/bootstrap_textgrids.py`
-- TextGrid bootstrap duoc tao tu `.phones`
-- duong nay chi nen dung cho smoke test hoac dung pipeline nhanh
+- thêm `preprocessor/infore1.py`
+- cập nhật `prepare_align.py` để hỗ trợ `InfoRe1`
+- bước raw preparation sẽ tạo `.wav`, `.lab` và `.phones`
 
-### Duong MFA nghiem tuc hon
+### Đường bootstrap alignment
 
-- them `scripts/build_infore1_mfa_assets.py`
-- them `scripts/run_mfa_train_alignment.py`
-- them `scripts/prepare_infore1_mfa.ps1`
-- duong nay bay gio train MFA tren phone inventory IPA-style cua repo roi xuat TextGrid that
+- cập nhật `scripts/bootstrap_textgrids.py`
+- TextGrid bootstrap được tạo từ `.phones`
+- đường này chỉ nên dùng cho smoke test hoặc dựng pipeline nhanh
 
-### Sua tuong thich runtime
+### Đường MFA nghiêm túc hơn
 
-- cap nhat cac phan audio, preprocessing va vocoder loading de hop voi stack Python/librosa/runtime hien tai
-- cai thien xu ly loi khi thieu vocoder checkpoint
+- thêm `scripts/build_infore1_mfa_assets.py`
+- thêm `scripts/run_mfa_train_alignment.py`
+- thêm `scripts/prepare_infore1_mfa.ps1`
+- đường này bây giờ train MFA trên phone inventory IPA-style của repo rồi xuất TextGrid thật
 
-### Quan ly HiFi-GAN
+### Sửa tương thích runtime
 
-- them `scripts/download_hifigan_pretrained.py`
-- cap nhat cach load vocoder de bao loi ro rang hon khi thieu checkpoint
+- cập nhật các phần audio, preprocessing và vocoder loading để hợp với stack Python/librosa/runtime hiện tại
+- cải thiện xử lý lỗi khi thiếu vocoder checkpoint
+
+### Quản lý HiFi-GAN
+
+- thêm `scripts/download_hifigan_pretrained.py`
+- cập nhật cách load vocoder để báo lỗi rõ ràng hơn khi thiếu checkpoint
 
 ### Workflow cho Kaggle
 
-- them `kaggle_fastspeech2vn.ipynb`
-- them `requirements-kaggle.txt`
-- ban clean duoc chuan bi theo huong de dua len GitHub va chay tren Kaggle
+- thêm `kaggle_fastspeech2vn.ipynb`
+- thêm `kaggle_fastspeech2vn_mfa.ipynb`
+- thêm `requirements-kaggle.txt`
+- bản clean được chuẩn bị theo hướng dễ đưa lên GitHub và chạy trên Kaggle
 
-### Lop dich vu tu xa tuy chon
+### Lớp dịch vụ từ xa tùy chọn
 
-- them `api/train_infer_api.py`
-- them `api/embed_api.py`
-- them `scripts/start_ngrok_services.py`
+- thêm `api/train_infer_api.py`
+- thêm `api/embed_api.py`
+- thêm `scripts/start_ngrok_services.py`
 
-## Ghi chu quan trong
+## Ghi chú quan trọng
 
-Repo clean va repo local dang chay du lieu that khong phai la mot.
-Ban clean la ban gon hon, dung de chia se len GitHub va chay lai tren Kaggle.
+Repo clean và repo local đang chạy dữ liệu thật không phải là một.
+Bản clean là bản gọn hơn, dùng để chia sẻ lên GitHub và chạy lại trên Kaggle.
