@@ -1,45 +1,50 @@
-﻿# Hướng dẫn cài đặt InfoRe1
+﻿# Huong dan cai dat InfoRe1
 
-Repo này giữ nguyên kiến trúc FastSpeech2 và bổ sung pipeline tiếng Việt cho dataset Hugging Face `doof-ferb/infore1_25hours`.
+Repo nay giu nguyen kien truc FastSpeech2 va bo sung pipeline tieng Viet cho dataset Hugging Face `doof-ferb/infore1_25hours`.
 
-## Repo này dùng để làm gì
+## Repo nay dung de lam gi
 
-- tải InfoRe1 trực tiếp về workspace thay vì phụ thuộc `.cache/huggingface`
-- chuyển transcript tiếng Việt sang phone inventory riêng của repo
-- chuẩn bị dữ liệu thô cho train
-- hỗ trợ hai đường alignment:
-  - đường bootstrap TextGrid nhanh để smoke test
-  - đường MFA nghiêm túc hơn để có duration và phone boundary tốt hơn
-- train và infer bằng FastSpeech2
+- tai InfoRe1 truc tiep ve workspace thay vi phu thuoc `.cache/huggingface`
+- chuyen transcript tieng Viet sang phone inventory kieu IPA trong `text/vietnamese.py`
+- chuan bi du lieu tho cho train
+- ho tro hai duong alignment:
+  - duong bootstrap TextGrid nhanh de smoke test
+  - duong MFA nghiem tuc hon de co duration va phone boundary tot hon
+- train va infer bang FastSpeech2
 
-## Môi trường chính
+## Moi truong chinh
 
 ### Kaggle
 
-Dùng:
+Dung:
 
 - `kaggle_fastspeech2vn.ipynb`
 - `requirements-kaggle.txt`
 
-Đây là đường khuyến nghị nếu bạn muốn train bằng GPU với bản clean.
+Day la duong khuyen nghi neu ban muon train bang GPU voi ban clean.
 
-### Máy local
+### May local
 
-Dùng:
+Dung:
 
 - `requirements-llama_gpu.txt`
-- `scripts/prepare_infore1.ps1` cho đường bootstrap nhanh
-- `scripts/prepare_infore1_mfa.ps1` cho đường MFA nghiêm túc hơn
+- `scripts/prepare_infore1.ps1` cho duong bootstrap nhanh
+- `scripts/prepare_infore1_mfa.ps1` cho duong MFA nghiem tuc hon
 
-## Đường bootstrap nhanh
+## Ghi chu ve frontend IPA
 
-Cài package:
+Repo nay da bo phone set cu dang `on_ / v_ / cod_ / tone_`.
+Hien tai `.phones`, lexicon cua MFA va text symbols cua FastSpeech2 deu dung cung mot bo nhan IPA-style cho tieng Viet.
+
+## Duong bootstrap nhanh
+
+Cai package:
 
 ```powershell
 & 'D:\Anaconda\envs\llama_gpu\python.exe' -m pip install -r .\requirements-llama_gpu.txt
 ```
 
-Chuẩn bị dữ liệu:
+Chuan bi du lieu:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1.ps1
@@ -51,20 +56,20 @@ Train:
 & 'D:\Anaconda\envs\llama_gpu\python.exe' .\train.py -p .\config\InfoRe1_25hours\preprocess.yaml -m .\config\InfoRe1_25hours\model.yaml -t .\config\InfoRe1_25hours\train.yaml
 ```
 
-## Đường MFA nghiêm túc hơn
+## Duong MFA nghiem tuc hon
 
-Nếu bạn muốn phone boundary và duration target tốt hơn, dùng:
+Neu ban muon phone boundary va duration target tot hon, dung:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1_mfa.ps1
 ```
 
-Tài liệu chi tiết:
+Tai lieu chi tiet:
 
 - `alignment-mfa-tieng-viet.md`
 
-## Ghi chú
+## Ghi chu
 
-- Bản clean hiện chỉ có `config/InfoRe1_25hours/train.yaml`.
-- Trong repo clean này, `train.yaml` là cấu hình train đang được notebook Kaggle sử dụng.
-- Nếu chạy trên GPU local yếu hơn, bạn có thể cần giảm `batch_size` hoặc tăng `grad_acc_step`.
+- Ban clean hien chi co `config/InfoRe1_25hours/train.yaml`.
+- Trong repo clean nay, `train.yaml` la cau hinh train dang duoc notebook Kaggle su dung.
+- Neu chay tren GPU local yeu hon, ban co the can giam `batch_size` hoac tang `grad_acc_step`.

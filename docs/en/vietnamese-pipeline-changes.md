@@ -11,8 +11,8 @@ Keep the FastSpeech2 architecture while adapting the data, text frontend, and wo
 ### Vietnamese text frontend
 
 - added `text/vietnamese.py`
-- added a custom Vietnamese phone inventory
-- added rule-based `phonemize_text()` for Vietnamese transcript processing
+- replaced the old custom `on_ / v_ / cod_ / tone_` inventory with an IPA-style Vietnamese phone inventory
+- kept rule-based `phonemize_text()` for Vietnamese transcript processing, but its output is now IPA-style and ViMFA-oriented
 
 ### Dataset download workflow
 
@@ -37,7 +37,7 @@ Keep the FastSpeech2 architecture while adapting the data, text frontend, and wo
 - added `scripts/build_infore1_mfa_assets.py`
 - added `scripts/run_mfa_train_alignment.py`
 - added `scripts/prepare_infore1_mfa.ps1`
-- this path trains MFA on the repo's own phone inventory and exports real TextGrids
+- this path now trains MFA on the repo's IPA-style phone inventory and exports real TextGrids
 
 ### Runtime compatibility fixes
 

@@ -1,67 +1,67 @@
-﻿# Thay đổi pipeline tiếng Việt
+﻿# Thay doi pipeline tieng Viet
 
-Tài liệu này tóm tắt các thay đổi chính được thêm vào trên nền repo gốc `ming024/FastSpeech2`.
+Tai lieu nay tom tat cac thay doi chinh duoc them vao tren nen repo goc `ming024/FastSpeech2`.
 
-## Mục tiêu chính
+## Muc tieu chinh
 
-Giữ nguyên kiến trúc FastSpeech2, nhưng điều chỉnh dữ liệu, text frontend và workflow để train tiếng Việt với `doof-ferb/infore1_25hours`.
+Giu nguyen kien truc FastSpeech2, nhung dieu chinh du lieu, text frontend va workflow de train tieng Viet voi `doof-ferb/infore1_25hours`.
 
-## Các thay đổi lớn
+## Cac thay doi lon
 
-### Frontend tiếng Việt
+### Frontend tieng Viet
 
-- thêm `text/vietnamese.py`
-- thêm phone inventory tiếng Việt riêng của repo
-- thêm `phonemize_text()` dạng rule-based để xử lý transcript tiếng Việt
+- them `text/vietnamese.py`
+- thay phone inventory cu dang `on_ / v_ / cod_ / tone_` bang phone inventory tieng Viet kieu IPA
+- giu `phonemize_text()` dang rule-based de xu ly transcript tieng Viet, nhung dau ra bay gio la IPA-style va huong theo cach to chuc lexicon cua ViMFA
 
-### Quy trình tải dataset
+### Quy trinh tai dataset
 
-- viết lại `scripts/download_infore1_dataset.py`
-- dataset được tải trực tiếp vào workspace của dự án thay vì phụ thuộc `.cache/huggingface`
-- file giải nén được đặt trong `corpus/infore1_25hours/`
+- viet lai `scripts/download_infore1_dataset.py`
+- dataset duoc tai truc tiep vao workspace cua du an thay vi phu thuoc `.cache/huggingface`
+- file giai nen duoc dat trong `corpus/infore1_25hours/`
 
-### Chuẩn bị raw-data cho InfoRe1
+### Chuan bi raw-data cho InfoRe1
 
-- thêm `preprocessor/infore1.py`
-- cập nhật `prepare_align.py` để hỗ trợ `InfoRe1`
-- bước raw preparation sẽ tạo `.wav`, `.lab` và `.phones`
+- them `preprocessor/infore1.py`
+- cap nhat `prepare_align.py` de ho tro `InfoRe1`
+- buoc raw preparation se tao `.wav`, `.lab` va `.phones`
 
-### Đường bootstrap alignment
+### Duong bootstrap alignment
 
-- cập nhật `scripts/bootstrap_textgrids.py`
-- TextGrid bootstrap được tạo từ `.phones`
-- đường này chỉ nên dùng cho smoke test hoặc dựng pipeline nhanh
+- cap nhat `scripts/bootstrap_textgrids.py`
+- TextGrid bootstrap duoc tao tu `.phones`
+- duong nay chi nen dung cho smoke test hoac dung pipeline nhanh
 
-### Đường MFA nghiêm túc hơn
+### Duong MFA nghiem tuc hon
 
-- thêm `scripts/build_infore1_mfa_assets.py`
-- thêm `scripts/run_mfa_train_alignment.py`
-- thêm `scripts/prepare_infore1_mfa.ps1`
-- đường này train MFA trên chính phone inventory của repo rồi xuất TextGrid thật
+- them `scripts/build_infore1_mfa_assets.py`
+- them `scripts/run_mfa_train_alignment.py`
+- them `scripts/prepare_infore1_mfa.ps1`
+- duong nay bay gio train MFA tren phone inventory IPA-style cua repo roi xuat TextGrid that
 
-### Sửa tương thích runtime
+### Sua tuong thich runtime
 
-- cập nhật các phần audio, preprocessing và vocoder loading để hợp với stack Python/librosa/runtime hiện tại
-- cải thiện xử lý lỗi khi thiếu vocoder checkpoint
+- cap nhat cac phan audio, preprocessing va vocoder loading de hop voi stack Python/librosa/runtime hien tai
+- cai thien xu ly loi khi thieu vocoder checkpoint
 
-### Quản lý HiFi-GAN
+### Quan ly HiFi-GAN
 
-- thêm `scripts/download_hifigan_pretrained.py`
-- cập nhật cách load vocoder để báo lỗi rõ ràng hơn khi thiếu checkpoint
+- them `scripts/download_hifigan_pretrained.py`
+- cap nhat cach load vocoder de bao loi ro rang hon khi thieu checkpoint
 
 ### Workflow cho Kaggle
 
-- thêm `kaggle_fastspeech2vn.ipynb`
-- thêm `requirements-kaggle.txt`
-- bản clean được chuẩn bị theo hướng dễ đưa lên GitHub và chạy trên Kaggle
+- them `kaggle_fastspeech2vn.ipynb`
+- them `requirements-kaggle.txt`
+- ban clean duoc chuan bi theo huong de dua len GitHub va chay tren Kaggle
 
-### Lớp dịch vụ từ xa tùy chọn
+### Lop dich vu tu xa tuy chon
 
-- thêm `api/train_infer_api.py`
-- thêm `api/embed_api.py`
-- thêm `scripts/start_ngrok_services.py`
+- them `api/train_infer_api.py`
+- them `api/embed_api.py`
+- them `scripts/start_ngrok_services.py`
 
-## Ghi chú quan trọng
+## Ghi chu quan trong
 
-Repo clean và repo local đang chạy dữ liệu thật không phải là một.
-Bản clean là bản gọn hơn, dùng để chia sẻ lên GitHub và chạy lại trên Kaggle.
+Repo clean va repo local dang chay du lieu that khong phai la mot.
+Ban clean la ban gon hon, dung de chia se len GitHub va chay lai tren Kaggle.

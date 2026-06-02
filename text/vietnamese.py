@@ -1,62 +1,67 @@
-import re
+﻿import re
 import unicodedata
 
 
-VIETNAMESE_PHONE_TOKENS = [
-    "on_b",
-    "on_ch",
-    "on_dd",
-    "on_f",
-    "on_g",
-    "on_h",
-    "on_k",
-    "on_kh",
-    "on_kw",
-    "on_l",
-    "on_m",
-    "on_n",
-    "on_ng",
-    "on_nh",
-    "on_p",
-    "on_r",
-    "on_s",
-    "on_t",
-    "on_th",
-    "on_tr",
-    "on_v",
-    "on_x",
-    "on_z",
-    "v_a",
-    "v_aa",
-    "v_aw",
-    "v_e",
-    "v_ee",
-    "v_i",
-    "v_o",
-    "v_oo",
-    "v_ow",
-    "v_u",
-    "v_uw",
-    "cod_j",
-    "cod_k",
-    "cod_m",
-    "cod_n",
-    "cod_ng",
-    "cod_nh",
-    "cod_p",
-    "cod_t",
-    "cod_w",
-    "tone_ngang",
-    "tone_sac",
-    "tone_huyen",
-    "tone_hoi",
-    "tone_nga",
-    "tone_nang",
+VIETNAMESE_IPA_TOKENS = [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "h",
+    "i",
+    "j",
+    "k",
+    "kʰ",
+    "kw",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "p̚",
+    "r",
+    "s",
     "sp",
     "spn",
     "sil",
+    "t",
+    "tʰ",
+    "tɕ",
+    "t̚",
+    "u",
+    "v",
+    "w",
+    "x",
+    "z",
+    "æ",
+    "ð",
+    "ŋ",
+    "ŋ͡m",
+    "ŋ̚",
+    "ɐ",
+    "ɑ",
+    "ɔ",
+    "ə",
+    "ɗ",
+    "ɛ",
+    "ɣ",
+    "ɤ",
+    "ɯ",
+    "ɲ",
+    "ɲ̚",
+    "ʈ",
+    "˧",
+    "˧˥",
+    "˧˥ʔ",
+    "˧˩˧",
+    "˨˩",
+    "˨˩ʔ",
 ]
 
+# Backward-compatible alias used by older imports.
+VIETNAMESE_PHONE_TOKENS = VIETNAMESE_IPA_TOKENS
 
 WORD_RE = re.compile(r"[0-9A-Za-zÀ-ỹĐđ]+|[^\s]")
 DIGIT_WORDS = {
@@ -73,12 +78,12 @@ DIGIT_WORDS = {
 }
 PUNCTUATION = set(",.;:!?\"'()[]{}-/")
 TONE_NAMES = {
-    0: "tone_ngang",
-    1: "tone_sac",
-    2: "tone_huyen",
-    3: "tone_hoi",
-    4: "tone_nga",
-    5: "tone_nang",
+    0: "˧",
+    1: "˧˥",
+    2: "˨˩",
+    3: "˧˩˧",
+    4: "˧˥ʔ",
+    5: "˨˩ʔ",
 }
 ACCENTED_VOWELS = {
     "a": "a",
@@ -229,62 +234,62 @@ TONE_IDS = {
     "ỵ": 5,
 }
 ONSET_MAP = [
-    ("ngh", "on_ng"),
-    ("ng", "on_ng"),
-    ("gh", "on_g"),
-    ("gi", "on_z"),
-    ("qu", "on_kw"),
-    ("th", "on_th"),
-    ("tr", "on_tr"),
-    ("ph", "on_f"),
-    ("nh", "on_nh"),
-    ("ch", "on_ch"),
-    ("kh", "on_kh"),
-    ("b", "on_b"),
-    ("c", "on_k"),
-    ("d", "on_z"),
-    ("đ", "on_dd"),
-    ("g", "on_g"),
-    ("h", "on_h"),
-    ("k", "on_k"),
-    ("l", "on_l"),
-    ("m", "on_m"),
-    ("n", "on_n"),
-    ("p", "on_p"),
-    ("q", "on_kw"),
-    ("r", "on_r"),
-    ("s", "on_s"),
-    ("t", "on_t"),
-    ("v", "on_v"),
-    ("x", "on_x"),
+    ("ngh", "ŋ"),
+    ("ng", "ŋ"),
+    ("gh", "ɣ"),
+    ("gi", "z"),
+    ("qu", "kw"),
+    ("th", "tʰ"),
+    ("tr", "ʈ"),
+    ("ph", "f"),
+    ("nh", "ɲ"),
+    ("ch", "tɕ"),
+    ("kh", "x"),
+    ("b", "b"),
+    ("c", "k"),
+    ("d", "z"),
+    ("đ", "ɗ"),
+    ("g", "ɣ"),
+    ("h", "h"),
+    ("k", "k"),
+    ("l", "l"),
+    ("m", "m"),
+    ("n", "n"),
+    ("p", "p"),
+    ("q", "kw"),
+    ("r", "r"),
+    ("s", "s"),
+    ("t", "t"),
+    ("v", "v"),
+    ("x", "s"),
 ]
 CODA_MAP = [
-    ("nh", "cod_nh"),
-    ("ng", "cod_ng"),
-    ("ch", "cod_k"),
-    ("c", "cod_k"),
-    ("m", "cod_m"),
-    ("n", "cod_n"),
-    ("p", "cod_p"),
-    ("t", "cod_t"),
-    ("y", "cod_j"),
-    ("i", "cod_j"),
-    ("u", "cod_w"),
-    ("o", "cod_w"),
+    ("nh", "ɲ̚"),
+    ("ng", "ŋ̚"),
+    ("ch", "k̚"),
+    ("c", "k̚"),
+    ("m", "m"),
+    ("n", "n"),
+    ("p", "p̚"),
+    ("t", "t̚"),
+    ("y", "j"),
+    ("i", "j"),
+    ("u", "w"),
+    ("o", "w"),
 ]
 VOWEL_MAP = {
-    "a": "v_a",
-    "ă": "v_aw",
-    "â": "v_aa",
-    "e": "v_e",
-    "ê": "v_ee",
-    "i": "v_i",
-    "y": "v_i",
-    "o": "v_o",
-    "ô": "v_oo",
-    "ơ": "v_ow",
-    "u": "v_u",
-    "ư": "v_uw",
+    "a": "a",
+    "ă": "ɐ",
+    "â": "ə",
+    "e": "ɛ",
+    "ê": "e",
+    "i": "i",
+    "y": "i",
+    "o": "ɔ",
+    "ô": "o",
+    "ơ": "ɤ",
+    "u": "u",
+    "ư": "ɯ",
 }
 
 
@@ -321,14 +326,14 @@ def split_coda(word):
     return word, None
 
 
-def word_to_phoneme_tokens(word):
+def word_to_ipa_tokens(word):
     if not word:
         return []
 
     if all(char.isdigit() for char in word):
         tokens = []
         for idx, digit in enumerate(word):
-            tokens.extend(word_to_phoneme_tokens(DIGIT_WORDS.get(digit, "")))
+            tokens.extend(word_to_ipa_tokens(DIGIT_WORDS.get(digit, "")))
             if idx != len(word) - 1:
                 tokens.append("sp")
         return tokens
@@ -342,10 +347,11 @@ def word_to_phoneme_tokens(word):
         tokens.append(onset_token)
 
     for char in vowel_chunk:
-        if char in VOWEL_MAP:
-            tokens.append(VOWEL_MAP[char])
+        mapped = VOWEL_MAP.get(char)
+        if mapped is not None:
+            tokens.append(mapped)
 
-    if not any(token.startswith("v_") for token in tokens):
+    if not any(token in VOWEL_MAP.values() for token in tokens):
         return ["spn"]
 
     if coda_token:
@@ -353,6 +359,10 @@ def word_to_phoneme_tokens(word):
 
     tokens.append(TONE_NAMES[tone])
     return tokens
+
+
+def word_to_phoneme_tokens(word):
+    return word_to_ipa_tokens(word)
 
 
 def phonemize_text(text):
@@ -363,10 +373,8 @@ def phonemize_text(text):
                 tokens.append("sp")
             continue
 
-        word_tokens = word_to_phoneme_tokens(piece)
-        tokens.extend(word_tokens)
+        tokens.extend(word_to_ipa_tokens(piece))
 
     while tokens and tokens[-1] == "sp":
         tokens.pop()
     return tokens or ["spn"]
-

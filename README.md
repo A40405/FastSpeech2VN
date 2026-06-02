@@ -3,6 +3,8 @@
 This repository is based on `ming024/FastSpeech2` and keeps the original FastSpeech2 architecture.
 The clean branch in this workspace adds a Vietnamese training pipeline for the Hugging Face dataset `doof-ferb/infore1_25hours`.
 
+The Vietnamese frontend now uses an IPA-style phone inventory so the text frontend, MFA lexicon, and alignment labels are closer to a real Vietnamese TTS pipeline such as ViMFA.
+
 ![](./img/model.png)
 
 ## Vietnamese Project Docs
@@ -13,16 +15,18 @@ Project-specific documentation for the clean Vietnamese pipeline:
 - `docs/en/setup-infore1.md`
 - `docs/en/local-train-guide.md`
 - `docs/en/mfa-vietnamese-alignment.md`
+- `docs/en/vietnamese-pipeline-changes.md`
 - `docs/vn/huong-dan-cai-dat-infore1.md`
 - `docs/vn/huong-dan-train-local.md`
 - `docs/vn/alignment-mfa-tieng-viet.md`
+- `docs/vn/thay-doi-pipeline-tieng-viet.md`
 
 ## Clean Repo Purpose
 
 This clean repo is intended for:
 
 - GitHub sharing
-- Kaggle training with `kaggle_fastspeech2vn.ipynb`
+- Kaggle training with `kaggle_fastspeech2vn.ipynb` or the MFA-oriented notebook
 - reproducible setup without bundling local data artifacts
 
 For Kaggle, use:
@@ -34,6 +38,11 @@ For local usage, see:
 
 - `docs/en/setup-infore1.md`
 - `docs/en/local-train-guide.md`
+
+## Vietnamese Frontend Notes
+
+The repo does not use the old `on_ / v_ / cod_ / tone_` token set anymore.
+It now uses IPA-style Vietnamese tokens produced by `text/vietnamese.py`, and the MFA helper scripts export a ViMFA-style pronunciation dictionary from that same frontend.
 
 ## Upstream FastSpeech2 Notes
 

@@ -10,15 +10,20 @@ If you want better duration targets, phone boundaries, rhythm, and pause placeme
 
 ## Design choice in this repo
 
-This repo uses a custom Vietnamese phone inventory defined in `text/vietnamese.py`.
-Because of that, the most consistent serious path is:
+This repo now uses an IPA-style Vietnamese phone inventory defined in `text/vietnamese.py`.
+That means the most consistent serious path is:
 
-1. build a pronunciation dictionary from the repo's own Vietnamese phonemizer
+1. build an IPA-style pronunciation dictionary from the repo's own Vietnamese frontend
 2. build an MFA corpus from the prepared raw files
 3. run `mfa train` to train an MFA acoustic model and export TextGrids
 4. run `preprocess.py` on those TextGrids
 
-This keeps MFA labels aligned with the same phone symbols that FastSpeech2 training uses in this repo.
+This keeps MFA labels aligned with the same IPA-style phone symbols that FastSpeech2 training uses in this repo.
+
+## ViMFA-style position
+
+This is closer to a real Vietnamese TTS stack than the old custom token set, because the repo now produces a ViMFA-style lexicon and MFA labels from the same IPA-oriented frontend.
+It is still a deterministic frontend in this repo, not a separately trained neural G2P model.
 
 ## New scripts
 
@@ -103,13 +108,7 @@ Use bootstrap only when:
 - you are debugging preprocessing or training setup
 - you do not want to install MFA yet
 
-## References
-
-- MFA train docs: https://montreal-forced-aligner.readthedocs.io/en/latest/user_guide/workflows/train_acoustic_model.html
-- MFA alignment docs: https://montreal-forced-aligner.readthedocs.io/en/stable/user_guide/workflows/alignment.html
-- Official Vietnamese MFA acoustic models: https://mfa-models.readthedocs.io/en/latest/acoustic/Vietnamese/index.html
-- Official Vietnamese MFA dictionaries: https://mfa-models.readthedocs.io/en/latest/dictionary/Vietnamese/index.html
-
 ## Important note
 
-This clean repo does not directly use the official pretrained Vietnamese MFA acoustic model, because the phone inventory in this repo is custom. The serious path here trains MFA on the repo's own pronunciation inventory so the labels remain compatible with FastSpeech2 training.
+This clean repo does not directly use the official pretrained Vietnamese MFA acoustic model.
+Instead, it trains MFA on the repo's own IPA-style pronunciation inventory so the labels remain compatible with FastSpeech2 training.

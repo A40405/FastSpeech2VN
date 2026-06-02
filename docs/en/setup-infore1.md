@@ -5,7 +5,7 @@ This repository keeps the FastSpeech2 architecture and adds a Vietnamese pipelin
 ## What this repo is for
 
 - download InfoRe1 into the workspace instead of relying on `.cache/huggingface`
-- convert Vietnamese transcripts into the repo's custom phone inventory
+- convert Vietnamese transcripts into an IPA-style phone inventory defined in `text/vietnamese.py`
 - prepare raw files for training
 - support two alignment paths:
   - a quick bootstrap TextGrid path for smoke tests
@@ -30,6 +30,11 @@ Use:
 - `requirements-llama_gpu.txt`
 - `scripts/prepare_infore1.ps1` for the quick bootstrap path
 - `scripts/prepare_infore1_mfa.ps1` for the more serious MFA path
+
+## IPA frontend notes
+
+The repo now uses an IPA-style Vietnamese token inventory instead of the old custom `on_ / v_ / cod_ / tone_` labels.
+That means the `.phones` files, MFA lexicon, and FastSpeech2 text symbols all share the same Vietnamese IPA-style labels.
 
 ## Quick bootstrap path
 
