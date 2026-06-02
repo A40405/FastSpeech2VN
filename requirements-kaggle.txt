@@ -1,4 +1,5 @@
-﻿# Base runtime dependencies for this repo outside Kaggle.
+﻿# Minimal Kaggle dependencies for preprocess/train/infer.
+# Avoid pinning core Kaggle stack like numpy/pandas/tensorboard unless required.
 librosa>=0.10,<0.11
 soundfile>=0.12,<0.14
 pyworld==0.3.4

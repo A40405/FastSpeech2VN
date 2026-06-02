@@ -1,4 +1,4 @@
 ﻿-r requirements.txt
-fastapi==0.115.0
-uvicorn==0.30.6
-pyngrok==7.2.0
+fastapi>=0.115.2,<1.0
+uvicorn>=0.34,<1.0
+pyngrok>=7.2,<8
