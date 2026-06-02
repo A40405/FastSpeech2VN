@@ -1,0 +1,16 @@
+﻿param(
+    [string]$DatasetId = "doof-ferb/infore1_25hours",
+    [string]$Split = "train",
+    [string]$PythonExe = "D:\Anaconda\envs\llama_gpu\python.exe",
+    [string]$MfaExe = "mfa",
+    [int]$NumJobs = 4
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+& $PythonExe .\scripts\download_infore1_dataset.py --dataset $DatasetId --split $Split --output-dir .\corpus\infore1_25hours
+& $PythonExe .\prepare_align.py .\config\InfoRe1_25hours\preprocess.yaml
+& $PythonExe .\scripts\build_infore1_mfa_assets.py --raw-root .\raw_data\InfoRe1 --corpus-root .\mfa_corpus\InfoRe1 --lexicon-path .\mfa_assets\infore1_vi.dict
+& $PythonExe .\scripts\run_mfa_train_alignment.py --mfa $MfaExe --corpus-root .\mfa_corpus\InfoRe1 --lexicon-path .\mfa_assets\infore1_vi.dict --output-root .\preprocessed_data\InfoRe1\TextGrid --model-path .\mfa_assets\infore1_vi_acoustic_model.zip --num-jobs $NumJobs --single-speaker --overwrite
+& $PythonExe .\preprocess.py .\config\InfoRe1_25hours\preprocess.yaml
