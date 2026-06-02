@@ -17,7 +17,6 @@ def slugify(value):
 
 
 def is_valid_parquet_file(path):
-    # Parquet files should start and end with magic bytes PAR1.
     if not path.exists() or path.stat().st_size < 8:
         return False
     try:
@@ -41,7 +40,6 @@ def remove_with_retry(path, max_retries=6):
                 break
             time.sleep(min(10, attempt))
 
-    # If file is still locked, quarantine it and continue.
     if path.exists():
         quarantine = path.with_suffix(path.suffix + f".corrupt.{int(time.time())}")
         try:
@@ -166,6 +164,11 @@ def main():
         default=0,
         help="Stop after this many samples, 0 means all samples",
     )
+    parser.add_argument(
+        "--cleanup-shards",
+        action="store_true",
+        help="Delete parquet shards after they are processed",
+    )
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
@@ -176,11 +179,12 @@ def main():
         if args.download_dir
         else output_dir / "_downloads" / args.split
     )
+    download_dir.mkdir(parents=True, exist_ok=True)
 
     metadata_rows = []
     sample_count = 0
-    parquet_files = list(iter_local_parquets(args.dataset, args.split, download_dir))
-    for parquet_path in tqdm(parquet_files, desc="Reading parquet shards"):
+
+    for parquet_path in tqdm(iter_local_parquets(args.dataset, args.split, download_dir), desc="Reading parquet shards"):
         table = pq.read_table(parquet_path, columns=["audio", "transcription"])
         for sample in table.to_pylist():
             if args.max_samples and sample_count >= args.max_samples:
@@ -198,6 +202,10 @@ def main():
             metadata_rows.append((basename, text, text))
             sample_count += 1
 
+        del table
+        if args.cleanup_shards:
+            remove_with_retry(parquet_path)
+
         if args.max_samples and sample_count >= args.max_samples:
             break
 
@@ -207,7 +215,10 @@ def main():
         writer.writerows(metadata_rows)
 
     print(f"Saved {len(metadata_rows)} samples to {output_dir}")
-    print(f"Source parquet shards stored in {download_dir}")
+    if args.cleanup_shards:
+        print(f"Source parquet shards were cleaned up from {download_dir}")
+    else:
+        print(f"Source parquet shards stored in {download_dir}")
 
 
 if __name__ == "__main__":
