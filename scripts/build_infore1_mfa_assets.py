@@ -1,10 +1,14 @@
-﻿import argparse
+import argparse
 import os
 import shutil
+import sys
 from pathlib import Path
 
-from text.vietnamese import DIGIT_WORDS, PUNCTUATION, WORD_RE, normalize_text, word_to_phoneme_tokens
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
+from text.vietnamese import DIGIT_WORDS, PUNCTUATION, WORD_RE, normalize_text, word_to_phoneme_tokens
 
 def text_to_words(text):
     words = []
