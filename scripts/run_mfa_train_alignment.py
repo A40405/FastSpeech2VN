@@ -1,8 +1,22 @@
 ﻿import argparse
+import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+
+def resolve_mfa_command(mfa_value):
+    mfa_path = Path(mfa_value)
+    if mfa_path.is_file():
+        return str(mfa_path.resolve()), str(mfa_path.resolve().parent)
+
+    discovered = shutil.which(mfa_value)
+    if discovered is None:
+        raise SystemExit(
+            'MFA executable not found. Install Montreal Forced Aligner first, for example via conda-forge.'
+        )
+    return discovered, str(Path(discovered).resolve().parent)
 
 
 def main():
@@ -17,10 +31,7 @@ def main():
     parser.add_argument('--overwrite', action='store_true', help='Overwrite previous MFA outputs')
     args = parser.parse_args()
 
-    if shutil.which(args.mfa) is None:
-        raise SystemExit(
-            'MFA executable not found. Install Montreal Forced Aligner first, for example via conda-forge.'
-        )
+    mfa_executable, mfa_bin_dir = resolve_mfa_command(args.mfa)
 
     corpus_root = Path(args.corpus_root)
     lexicon_path = Path(args.lexicon_path)
@@ -30,7 +41,7 @@ def main():
     model_path.parent.mkdir(parents=True, exist_ok=True)
 
     command = [
-        args.mfa,
+        mfa_executable,
         'train',
         str(corpus_root),
         str(lexicon_path),
@@ -48,8 +59,11 @@ def main():
     if args.overwrite:
         command.append('--overwrite')
 
+    env = os.environ.copy()
+    env['PATH'] = mfa_bin_dir + os.pathsep + env.get('PATH', '')
+
     print('Running:', ' '.join(command))
-    completed = subprocess.run(command)
+    completed = subprocess.run(command, env=env)
     sys.exit(completed.returncode)
 
 
