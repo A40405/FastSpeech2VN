@@ -4,7 +4,7 @@ Repository này giữ nguyên kiến trúc FastSpeech2 và thêm pipeline tiến
 
 ## Mục đích của repo
 
-- tải InfoRe1 trực tiếp về workspace thay vì phụ thuộc `.cache/huggingface`
+- tải InfoRe1 trực tiếp về workspace
 - chuyển transcript tiếng Việt sang phone inventory kiểu IPA được định nghĩa trong `text/vietnamese.py`
 - chuẩn bị file thô để train
 - xuất các tài nguyên theo kiểu ViMFA cho MFA và G2P:
@@ -23,7 +23,6 @@ Repository này giữ nguyên kiến trúc FastSpeech2 và thêm pipeline tiến
 ### Kaggle
 
 Dùng `requirements-kaggle.txt`.
-Notebook Kaggle phải để ngoài repo Git, trong workspace riêng của bạn.
 
 ### Máy local
 

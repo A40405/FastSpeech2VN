@@ -5,7 +5,6 @@ This repo now treats the demo area as a Vietnamese-only export folder for InfoRe
 ## Goal
 
 The demo is meant to show Vietnamese ground-truth audio and synthesized audio from the current pipeline.
-It does not reuse the upstream English/Chinese showcase assets.
 
 ## Folder layout
 

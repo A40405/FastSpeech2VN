@@ -4,7 +4,7 @@ Tài liệu dành riêng cho pipeline tiếng Việt của dự án nằm trong 
 
 - `infore1-cai-dat.md`
 - `infore1-train-local.md`
-- `alignment-mfa-tieng-viet.md`
+- `mfa-tieng-viet-can-chinh.md`
 - `dich-vu-ngrok.md`
 - `infore1-demo-tieng-viet.md`
 - `thay-doi-pipeline-tieng-viet.md`

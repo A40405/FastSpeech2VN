@@ -4,7 +4,7 @@ This repository keeps the FastSpeech2 architecture and adds a Vietnamese pipelin
 
 ## What this repo is for
 
-- download InfoRe1 into the workspace instead of relying on `.cache/huggingface`
+- download InfoRe1 into the workspace
 - convert Vietnamese transcripts into an IPA-style phone inventory defined in `text/vietnamese.py`
 - prepare raw files for training
 - export ViMFA-style assets for MFA and G2P:
@@ -23,7 +23,6 @@ This repository keeps the FastSpeech2 architecture and adds a Vietnamese pipelin
 ### Kaggle
 
 Use `requirements-kaggle.txt`.
-Keep the Kaggle notebook outside the Git repo in your workspace.
 
 ### Local machine
 

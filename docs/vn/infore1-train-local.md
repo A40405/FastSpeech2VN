@@ -26,7 +26,7 @@ Script wrapper này đã chạy luôn:
 
 Tài liệu chi tiết:
 
-- `alignment-mfa-tieng-viet.md`
+- `mfa-tieng-viet-can-chinh.md`
 
 ## 3) Train FastSpeech2
 

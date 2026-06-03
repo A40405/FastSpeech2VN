@@ -5,7 +5,6 @@ Repo này bây giờ coi khu vực demo là thư mục xuất mẫu riêng cho I
 ## Mục tiêu
 
 Demo dùng để trình bày audio tiếng Việt gốc và audio sinh ra từ pipeline hiện tại.
-Nó không tái sử dụng bộ showcase tiếng Anh/Trung của upstream nữa.
 
 ## Cấu trúc thư mục
 
