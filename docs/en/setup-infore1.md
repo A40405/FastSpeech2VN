@@ -7,6 +7,11 @@ This repository keeps the FastSpeech2 architecture and adds a Vietnamese pipelin
 - download InfoRe1 into the workspace instead of relying on `.cache/huggingface`
 - convert Vietnamese transcripts into an IPA-style phone inventory defined in `text/vietnamese.py`
 - prepare raw files for training
+- export ViMFA-style assets for MFA and G2P:
+  - `mfa_assets/infore1_vi.dict`
+  - `mfa_assets/infore1_vi_g2p.tsv`
+  - `mfa_assets/infore1_vi.wordlist`
+  - `mfa_assets/infore1_vi_symbol_map.tsv`
 - support two alignment paths:
   - a quick bootstrap TextGrid path for smoke tests
   - a more serious MFA-based alignment path for better duration and boundary quality
@@ -16,12 +21,8 @@ This repository keeps the FastSpeech2 architecture and adds a Vietnamese pipelin
 
 ### Kaggle
 
-Use:
-
-- `kaggle_fastspeech2vn.ipynb`
-- `requirements-kaggle.txt`
-
-This is the recommended path if you want GPU training with the clean repo.
+Use `requirements-kaggle.txt`.
+Keep the Kaggle notebook outside the Git repo in your workspace.
 
 ### Local machine
 
@@ -34,7 +35,9 @@ Use:
 ## IPA frontend notes
 
 The repo now uses an IPA-style Vietnamese token inventory instead of the old custom `on_ / v_ / cod_ / tone_` labels.
-That means the `.phones` files, MFA lexicon, and FastSpeech2 text symbols all share the same Vietnamese IPA-style labels.
+That means the `.phones` files, MFA lexicon, G2P training data, and FastSpeech2 text symbols all share the same Vietnamese IPA-style labels.
+
+The repo is still not a drop-in copy of `ViMFA`, but it now exposes the same practical building blocks: pronunciation dictionary data, G2P training data, word lists, and symbol mapping.
 
 ## Quick bootstrap path
 
@@ -62,6 +65,12 @@ If you want better phone boundaries and duration targets, use:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1_mfa.ps1
+```
+
+If you also want to train an MFA G2P model from the exported Vietnamese IPA lexicon data, run:
+
+```powershell
+python .\scripts\train_vietnamese_g2p.py --mfa mfa --dictionary-path .\mfa_assets\infore1_vi_g2p.tsv --output-model-path .\mfa_assets\infore1_vi_g2p_model.zip --overwrite
 ```
 
 Detailed guide:

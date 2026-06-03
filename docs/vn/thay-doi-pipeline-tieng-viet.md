@@ -23,7 +23,7 @@ Giữ nguyên kiến trúc FastSpeech2, nhưng điều chỉnh dữ liệu, text
 ### Quy trình tải dataset
 
 - viết lại `scripts/download_infore1_dataset.py`
-- dataset được tải trực tiếp vào workspace của dự án thay vì phụ thuộc `.cache/huggingface`
+- dataset được tải trực tiếp vào workspace của dự án
 - file giải nén được đặt trong `corpus/infore1_25hours/`
 
 ### Chuẩn bị raw-data cho InfoRe1
@@ -42,8 +42,9 @@ Giữ nguyên kiến trúc FastSpeech2, nhưng điều chỉnh dữ liệu, text
 
 - thêm `scripts/build_infore1_mfa_assets.py`
 - thêm `scripts/run_mfa_train_alignment.py`
+- thêm `scripts/train_vietnamese_g2p.py`
 - thêm `scripts/prepare_infore1_mfa.ps1`
-- đường này bây giờ train MFA trên phone inventory IPA-style của repo rồi xuất TextGrid thật
+- đường này bây giờ xuất IPA lexicon, dữ liệu train G2P, word list và symbol map trước khi train MFA
 
 ### Sửa tương thích runtime
 
@@ -57,10 +58,9 @@ Giữ nguyên kiến trúc FastSpeech2, nhưng điều chỉnh dữ liệu, text
 
 ### Workflow cho Kaggle
 
-- thêm `kaggle_fastspeech2vn.ipynb`
-- thêm `kaggle_fastspeech2vn_mfa.ipynb`
 - thêm `requirements-kaggle.txt`
 - bản clean được chuẩn bị theo hướng dễ đưa lên GitHub và chạy trên Kaggle
+- notebook Kaggle được giữ ngoài repo Git, trong workspace riêng
 
 ### Lớp dịch vụ từ xa tùy chọn
 

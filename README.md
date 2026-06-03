@@ -26,13 +26,10 @@ Project-specific documentation for the clean Vietnamese pipeline:
 This clean repo is intended for:
 
 - GitHub sharing
-- Kaggle training with `kaggle_fastspeech2vn.ipynb` or the MFA-oriented notebook
 - reproducible setup without bundling local data artifacts
 
-For Kaggle, use:
-
-- `kaggle_fastspeech2vn.ipynb`
-- `requirements-kaggle.txt`
+For Kaggle, keep the notebook outside the repo and use `requirements-kaggle.txt`.
+The GitHub repo itself does not bundle Kaggle notebooks.
 
 For local usage, see:
 
@@ -42,7 +39,15 @@ For local usage, see:
 ## Vietnamese Frontend Notes
 
 The repo does not use the old `on_ / v_ / cod_ / tone_` token set anymore.
-It now uses IPA-style Vietnamese tokens produced by `text/vietnamese.py`, and the MFA helper scripts export a ViMFA-style pronunciation dictionary from that same frontend.
+It now uses IPA-style Vietnamese tokens produced by `text/vietnamese.py`.
+
+In addition to `.phones` generation, the repo now exports:
+
+- an MFA lexicon: `mfa_assets/infore1_vi.dict`
+- MFA-style G2P training data: `mfa_assets/infore1_vi_g2p.tsv`
+- an IPA-to-FastSpeech2 symbol map: `mfa_assets/infore1_vi_symbol_map.tsv`
+
+This makes the pipeline closer to ViMFA-style organization, while still keeping FastSpeech2 and the repo's own deterministic Vietnamese frontend.
 
 ## Upstream FastSpeech2 Notes
 

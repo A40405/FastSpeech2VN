@@ -36,8 +36,9 @@ Keep the FastSpeech2 architecture while adapting the data, text frontend, and wo
 
 - added `scripts/build_infore1_mfa_assets.py`
 - added `scripts/run_mfa_train_alignment.py`
+- added `scripts/train_vietnamese_g2p.py`
 - added `scripts/prepare_infore1_mfa.ps1`
-- this path now trains MFA on the repo's IPA-style phone inventory and exports real TextGrids
+- this path now exports an IPA lexicon, G2P training data, a word list, and a symbol map before training MFA
 
 ### Runtime compatibility fixes
 
@@ -51,9 +52,9 @@ Keep the FastSpeech2 architecture while adapting the data, text frontend, and wo
 
 ### Kaggle workflow
 
-- added `kaggle_fastspeech2vn.ipynb`
 - added `requirements-kaggle.txt`
 - the clean repo is prepared for Kaggle notebook usage and reproducible sharing
+- Kaggle notebooks are kept outside the Git repo in the workspace
 
 ### Optional remote service layer
 
