@@ -10,7 +10,7 @@ Repo hiện giữ frontend tiếng Việt kiểu IPA và dùng MFA để alignme
 ## Pipeline tạo ra gì
 
 - `mfa_assets/infore1_vi.dict`
-- `mfa_assets/infore1_vi_g2p.tsv`
+- `mfa_assets/infore1_vi.dict`
 - `mfa_assets/infore1_vi.wordlist`
 - `mfa_assets/infore1_vi_symbol_map.tsv`
 - `mfa_assets/infore1_vi_g2p_model.zip`
@@ -57,7 +57,7 @@ Script wrapper này sẽ gọi luôn toàn bộ pipeline MFA, bao gồm bước 
 Nếu muốn chạy tay từng bước alignment, hai lệnh chính là:
 
 ```powershell
-python .\scripts\train_vietnamese_g2p.py --mfa mfa --dictionary-path .\mfa_assets\infore1_vi_g2p.tsv --output-model-path .\mfa_assets\infore1_vi_g2p_model.zip --overwrite
+python .\scripts\train_vietnamese_g2p.py --mfa mfa --dictionary-path .\mfa_assets\infore1_vi.dict --output-model-path .\mfa_assets\infore1_vi_g2p_model.zip --overwrite
 ```
 
 ```powershell

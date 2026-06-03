@@ -10,7 +10,7 @@ The recommended path is the full pipeline, not a bootstrap approximation.
 ## What the pipeline produces
 
 - `mfa_assets/infore1_vi.dict`
-- `mfa_assets/infore1_vi_g2p.tsv`
+- `mfa_assets/infore1_vi.dict`
 - `mfa_assets/infore1_vi.wordlist`
 - `mfa_assets/infore1_vi_symbol_map.tsv`
 - `mfa_assets/infore1_vi_g2p_model.zip`
@@ -28,7 +28,7 @@ The repo now follows the same practical structure as ViMFA:
 However, it is still not a full copy of the ViMFA repository resources:
 
 - the frontend remains deterministic inside this repo
-- the G2P model is trained from the exported IPA lexicon data rather than being copied from ViMFA
+- the G2P model is trained from the exported IPA pronunciation dictionary rather than being copied from ViMFA
 - the acoustic alignment model is trained in the repo workflow rather than bundled from ViMFA
 
 So the project is ViMFA-inspired and structurally closer to a real Vietnamese TTS stack, but it is still self-contained.
@@ -67,7 +67,7 @@ That wrapper now calls the full MFA pipeline, including G2P training.
 If you want to run the alignment stage manually, the two key commands are:
 
 ```powershell
-python .\scripts\train_vietnamese_g2p.py --mfa mfa --dictionary-path .\mfa_assets\infore1_vi_g2p.tsv --output-model-path .\mfa_assets\infore1_vi_g2p_model.zip --overwrite
+python .\scripts\train_vietnamese_g2p.py --mfa mfa --dictionary-path .\mfa_assets\infore1_vi.dict --output-model-path .\mfa_assets\infore1_vi_g2p_model.zip --overwrite
 ```
 
 ```powershell

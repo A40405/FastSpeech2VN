@@ -9,10 +9,10 @@ This repository keeps the FastSpeech2 architecture and adds a Vietnamese pipelin
 - prepare raw files for training
 - export ViMFA-style assets for MFA and G2P:
   - `mfa_assets/infore1_vi.dict`
-  - `mfa_assets/infore1_vi_g2p.tsv`
+  - `mfa_assets/infore1_vi.dict`
   - `mfa_assets/infore1_vi.wordlist`
   - `mfa_assets/infore1_vi_symbol_map.tsv`
-- train a reusable MFA G2P model from the exported IPA lexicon data
+- train a reusable MFA G2P model from the exported IPA pronunciation dictionary
 - use lexicon-first inference, then G2P for OOV words, then rule-based fallback
 - run MFA alignment and FastSpeech2 preprocessing in one full pipeline
 - train and infer with FastSpeech2

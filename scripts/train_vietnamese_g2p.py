@@ -26,8 +26,8 @@ def main():
     parser.add_argument("--mfa", default="mfa", help="MFA executable name or path")
     parser.add_argument(
         "--dictionary-path",
-        default="mfa_assets/infore1_vi_g2p.tsv",
-        help="Path to word<TAB>phones training data or pronunciation dictionary",
+        default="mfa_assets/infore1_vi.dict",
+        help="Path to the IPA pronunciation dictionary used by MFA train_g2p",
     )
     parser.add_argument(
         "--output-model-path",

@@ -9,7 +9,7 @@ Repository này giữ nguyên kiến trúc FastSpeech2 và thêm pipeline tiến
 - chuẩn bị file thô để train
 - xuất các tài nguyên theo kiểu ViMFA cho MFA và G2P:
   - `mfa_assets/infore1_vi.dict`
-  - `mfa_assets/infore1_vi_g2p.tsv`
+  - `mfa_assets/infore1_vi.dict`
   - `mfa_assets/infore1_vi.wordlist`
   - `mfa_assets/infore1_vi_symbol_map.tsv`
 - train một G2P model MFA có thể tái sử dụng từ lexicon IPA đã xuất
