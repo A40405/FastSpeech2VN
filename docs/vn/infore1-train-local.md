@@ -5,13 +5,14 @@
 ## 1) Cài package
 
 ```powershell
-& 'D:\Anaconda\envs\llama_gpu\python.exe' -m pip install -r .\requirements-llama_gpu.txt
+$env:PYTHON_EXE = "python"
+& $env:PYTHON_EXE -m pip install -r .\requirements-llama_gpu.txt
 ```
 
 ## 2) Chạy toàn bộ pipeline InfoRe1
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1.ps1 -PythonExe $env:PYTHON_EXE -MfaExe "mfa"
 ```
 
 Script wrapper này đã chạy luôn:
@@ -25,18 +26,18 @@ Script wrapper này đã chạy luôn:
 
 Tài liệu chi tiết:
 
-- `mfa-vietnamese-alignment.md`
+- `alignment-mfa-tieng-viet.md`
 
 ## 3) Train FastSpeech2
 
 ```powershell
-& 'D:\Anaconda\envs\llama_gpu\python.exe' .\train.py -p .\config\InfoRe1_25hours\preprocess.yaml -m .\config\InfoRe1_25hours\model.yaml -t .\config\InfoRe1_25hours\train.yaml
+& $env:PYTHON_EXE .\train.py -p .\config\InfoRe1_25hours\preprocess.yaml -m .\config\InfoRe1_25hours\model.yaml -t .\config\InfoRe1_25hours\train.yaml
 ```
 
 ## 4) TensorBoard
 
 ```powershell
-& 'C:\Users\anhhu\AppData\Roaming\Python\Python310\Scripts\tensorboard.exe' --logdir .\output\log\InfoRe1
+& $env:PYTHON_EXE -m tensorboard.main --logdir .\output\log\InfoRe1
 ```
 
 ## 5) Infer WAV chất lượng cao
@@ -44,13 +45,13 @@ Tài liệu chi tiết:
 Tải HiFi-GAN pretrained weights:
 
 ```powershell
-& 'D:\Anaconda\envs\llama_gpu\python.exe' .\scripts\download_hifigan_pretrained.py
+& $env:PYTHON_EXE .\scripts\download_hifigan_pretrained.py
 ```
 
 Infer:
 
 ```powershell
-& 'D:\Anaconda\envs\llama_gpu\python.exe' .\synthesize.py --mode single --text "xin chao, day la fastspeech hai tieng viet" --restore_step 9000 -p .\config\InfoRe1_25hours\preprocess.yaml -m .\config\InfoRe1_25hours\model.yaml -t .\config\InfoRe1_25hours\train.yaml
+& $env:PYTHON_EXE .\synthesize.py --mode single --text "xin chao, day la fastspeech hai tieng viet" --restore_step 9000 -p .\config\InfoRe1_25hours\preprocess.yaml -m .\config\InfoRe1_25hours\model.yaml -t .\config\InfoRe1_25hours\train.yaml
 ```
 
 ## 6) Ghi chú quan trọng

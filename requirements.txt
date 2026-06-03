@@ -1,4 +1,9 @@
-﻿# Base runtime dependencies for this repo outside Kaggle.
+# Base runtime dependencies for this repo outside Kaggle.
+# Shared compatibility constraints:
+# - `huggingface-hub` must stay `<1.0` for the current `transformers` / `tokenizers` stack.
+# - `starlette` must stay `<1.0` for environments that already include `mlflow-skinny`.
+# - `fsspec` is pinned to `2025.3.0` so it remains compatible with common preinstalled
+#   `datasets` / `gcsfs` combinations in local notebook-style environments.
 librosa>=0.10,<0.11
 soundfile>=0.12,<0.14
 pyworld==0.3.4
@@ -7,7 +12,9 @@ unidecode>=1.3.8
 inflect>=7.3.1
 g2p-en==2.1.0
 pypinyin>=0.52.0
-huggingface-hub<2.0,>=1.3.0
+huggingface-hub>=0.23.2,<1.0
+starlette<1.0
+fsspec==2025.3.0
 pyarrow>=21,<22
 requests>=2.32,<3
 gdown>=5.2,<6

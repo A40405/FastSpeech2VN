@@ -9,4 +9,4 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-& $PythonExe .\scripts\prepare_infore1_mfa.ps1 -DatasetId $DatasetId -Split $Split -PythonExe $PythonExe -MfaExe $MfaExe -NumJobs $NumJobs
+& powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1_mfa.ps1 -DatasetId $DatasetId -Split $Split -PythonExe $PythonExe -MfaExe $MfaExe -NumJobs $NumJobs

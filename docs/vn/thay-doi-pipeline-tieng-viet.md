@@ -44,6 +44,7 @@ Giữ nguyên kiến trúc FastSpeech2, nhưng điều chỉnh dữ liệu, text
 - thêm `scripts/build_infore1_mfa_assets.py`
 - thêm `scripts/run_mfa_train_alignment.py`
 - thêm `scripts/train_vietnamese_g2p.py`
+- thêm `scripts/prepare_infore1.ps1`
 - thêm `scripts/prepare_infore1_mfa.ps1`
 - đường này xuất IPA lexicon, dữ liệu train G2P, word list và symbol map trước khi train G2P model và chạy MFA acoustic alignment
 

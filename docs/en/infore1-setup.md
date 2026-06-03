@@ -9,9 +9,10 @@ This repository keeps the FastSpeech2 architecture and adds a Vietnamese pipelin
 - prepare raw files for training
 - export ViMFA-style assets for MFA and G2P:
   - `mfa_assets/infore1_vi.dict`
-  - `mfa_assets/infore1_vi.dict`
+  - `mfa_assets/infore1_vi_g2p.tsv`
   - `mfa_assets/infore1_vi.wordlist`
   - `mfa_assets/infore1_vi_symbol_map.tsv`
+  - `mfa_assets/infore1_vi_g2p_model.zip`
 - train a reusable MFA G2P model from the exported IPA pronunciation dictionary
 - use lexicon-first inference, then G2P for OOV words, then rule-based fallback
 - run MFA alignment and FastSpeech2 preprocessing in one full pipeline
@@ -43,16 +44,17 @@ The repo is still not a drop-in copy of `ViMFA`, but it now exposes the same pra
 Install packages:
 
 ```powershell
-& 'D:\Anaconda\envs\llama_gpu\python.exe' -m pip install -r .\requirements-llama_gpu.txt
+$env:PYTHON_EXE = "python"
+& $env:PYTHON_EXE -m pip install -r .\requirements-llama_gpu.txt
 ```
 
 Run the full InfoRe1 pipeline:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1.ps1 -PythonExe $env:PYTHON_EXE -MfaExe "mfa"
 ```
 
-The wrapper script calls the full MFA pipeline, including G2P training.
+`prepare_infore1.ps1` is a thin PowerShell wrapper around `scripts/prepare_infore1_mfa.ps1`, which runs the full MFA pipeline including G2P training.
 
 ## Inference behavior
 

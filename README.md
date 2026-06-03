@@ -12,18 +12,18 @@ The Vietnamese frontend now uses an IPA-style phone inventory so the text fronte
 Project-specific documentation for the clean Vietnamese pipeline:
 
 - `docs/README.md`
-- `docs/en/setup-infore1.md`
-- `docs/en/local-train-guide.md`
+- `docs/en/infore1-setup.md`
+- `docs/en/infore1-local-train-guide.md`
 - `docs/en/mfa-vietnamese-alignment.md`
 - `docs/en/vietnamese-pipeline-changes.md`
 - `docs/en/ngrok-services.md`
-- `docs/en/vietnamese-demo.md`
-- `docs/vn/huong-dan-cai-dat-infore1.md`
-- `docs/vn/huong-dan-train-local.md`
+- `docs/en/infore1-vietnamese-demo.md`
+- `docs/vn/infore1-cai-dat.md`
+- `docs/vn/infore1-train-local.md`
 - `docs/vn/alignment-mfa-tieng-viet.md`
 - `docs/vn/thay-doi-pipeline-tieng-viet.md`
 - `docs/vn/dich-vu-ngrok.md`
-- `docs/vn/demo-tieng-viet.md`
+- `docs/vn/infore1-demo-tieng-viet.md`
 
 ## Clean Repo Purpose
 
@@ -37,8 +37,8 @@ The GitHub repo itself does not bundle Kaggle notebooks.
 
 For local usage, see:
 
-- `docs/en/setup-infore1.md`
-- `docs/en/local-train-guide.md`
+- `docs/en/infore1-setup.md`
+- `docs/en/infore1-local-train-guide.md`
 
 ## Vietnamese Frontend Notes
 

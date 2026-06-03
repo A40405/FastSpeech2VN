@@ -44,13 +44,14 @@ Keep the FastSpeech2 architecture, but adapt the data, text frontend, and workfl
 - added `scripts/build_infore1_mfa_assets.py`
 - added `scripts/run_mfa_train_alignment.py`
 - added `scripts/train_vietnamese_g2p.py`
+- added `scripts/prepare_infore1.ps1`
 - added `scripts/prepare_infore1_mfa.ps1`
 - the full path exports the IPA lexicon, G2P training data, word list, and symbol map before training the G2P model and running MFA acoustic alignment
 
-### Sửa tương thích runtime
+### Runtime compatibility fixes
 
-- cập nhật các phần audio, preprocessing và vocoder loading để hợp với stack Python/librosa/runtime hiện tại
-- cải thiện xử lý lỗi khi thiếu vocoder checkpoint
+- updated audio, preprocessing, and vocoder loading for the current Python/librosa/runtime stack
+- improved error handling when the vocoder checkpoint is missing
 
 ### HiFi-GAN management
 

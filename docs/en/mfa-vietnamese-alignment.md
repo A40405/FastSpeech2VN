@@ -10,7 +10,7 @@ The recommended path is the full pipeline, not a bootstrap approximation.
 ## What the pipeline produces
 
 - `mfa_assets/infore1_vi.dict`
-- `mfa_assets/infore1_vi.dict`
+- `mfa_assets/infore1_vi_g2p.tsv`
 - `mfa_assets/infore1_vi.wordlist`
 - `mfa_assets/infore1_vi_symbol_map.tsv`
 - `mfa_assets/infore1_vi_g2p_model.zip`
@@ -59,10 +59,11 @@ That same philosophy is reflected in the full alignment flow.
 Use the full pipeline wrapper:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1.ps1
+$env:PYTHON_EXE = "python"
+powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1.ps1 -PythonExe $env:PYTHON_EXE -MfaExe "mfa"
 ```
 
-That wrapper now calls the full MFA pipeline, including G2P training.
+That wrapper delegates to `scripts/prepare_infore1_mfa.ps1`, which runs the full MFA pipeline including G2P training.
 
 If you want to run the alignment stage manually, the two key commands are:
 

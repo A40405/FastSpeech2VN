@@ -20,7 +20,8 @@ This setup starts:
 ## Install
 
 ```powershell
-& 'D:\Anaconda\envs\llama_gpu\python.exe' -m pip install -r .\requirements-llama_gpu.txt
+$env:PYTHON_EXE = "python"
+& $env:PYTHON_EXE -m pip install -r .\requirements-llama_gpu.txt
 ```
 
 ## Run
@@ -29,8 +30,8 @@ Set the ngrok token and Python path:
 
 ```powershell
 $env:NGROK_AUTHTOKEN="YOUR_NGROK_TOKEN"
-$env:PYTHON_EXE="D:\Anaconda\envs\llama_gpu\python.exe"
-& 'D:\Anaconda\envs\llama_gpu\python.exe' .\scripts\start_ngrok_services.py
+$env:PYTHON_EXE="python"
+& $env:PYTHON_EXE .\scripts\start_ngrok_services.py
 ```
 
 The script prints two public URLs:
