@@ -17,6 +17,7 @@ from text.vietnamese import phonemize_text, text_to_words
 
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON_EXE = os.environ.get("PYTHON_EXE", "python")
+ENABLE_DEBUG_API = os.environ.get("ENABLE_DEBUG_API", "0").lower() in {"1", "true", "yes", "on"}
 
 app = FastAPI(title="FastSpeech2 Train/Infer API", version="1.0")
 
@@ -42,6 +43,11 @@ class InferRequest(BaseModel):
     energy_control: float = 1.0
     duration_control: float = 1.0
     include_frontend_debug: bool = True
+
+
+class DebugRequest(BaseModel):
+    text: str
+    preprocess_config: str = "config/InfoRe1_25hours/preprocess.yaml"
 
 
 def resolve_config_path(config_path: str) -> Path:
@@ -162,30 +168,12 @@ def build_vietnamese_frontend_debug(text: str, preprocess_config: Dict) -> Dict:
             source = "rule"
             word_tokens = phonemize_text(word)
 
-        word_entries.append(
-            {
-                "word": word,
-                "source": source,
-                "tokens": word_tokens,
-            }
-        )
+        word_entries.append({"word": word, "source": source, "tokens": word_tokens})
         for token in word_tokens:
-            token_entries.append(
-                {
-                    "word": word,
-                    "token": token,
-                    "source": source,
-                }
-            )
+            token_entries.append({"word": word, "token": token, "source": source})
             final_tokens.append(token)
         if index != len(words) - 1:
-            token_entries.append(
-                {
-                    "word": word,
-                    "token": "sp",
-                    "source": "separator",
-                }
-            )
+            token_entries.append({"word": word, "token": "sp", "source": "separator"})
             final_tokens.append("sp")
 
     if not final_tokens:
@@ -208,7 +196,7 @@ def build_vietnamese_frontend_debug(text: str, preprocess_config: Dict) -> Dict:
 
 @app.get("/health")
 def health():
-    return {"ok": True}
+    return {"ok": True, "debug_api_enabled": ENABLE_DEBUG_API}
 
 
 @app.post("/train/start")
@@ -305,3 +293,18 @@ def infer(req: InferRequest):
     if frontend_debug is not None:
         response["frontend_debug"] = frontend_debug
     return response
+
+
+@app.post("/infer/debug")
+def infer_debug(req: DebugRequest):
+    if not ENABLE_DEBUG_API:
+        raise HTTPException(status_code=404, detail="Debug API is disabled in this environment")
+    text = req.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="text is required")
+
+    preprocess_config = load_yaml_config(req.preprocess_config)
+    if not preprocess_config:
+        raise HTTPException(status_code=400, detail="Invalid preprocess config")
+
+    return {"ok": True, "frontend_debug": build_vietnamese_frontend_debug(text, preprocess_config)}
