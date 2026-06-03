@@ -27,11 +27,21 @@ The repo now follows the same practical structure as ViMFA:
 
 However, it is still not a full copy of the ViMFA repository resources:
 
-- the frontend remains deterministic and rule-based inside this repo
+- the frontend remains deterministic inside this repo
 - the G2P model is trained from the exported IPA lexicon data rather than being copied from ViMFA
 - the acoustic alignment model is trained in the repo workflow rather than bundled from ViMFA
 
 So the project is ViMFA-inspired and structurally closer to a real Vietnamese TTS stack, but it is still self-contained.
+
+## Alignment and inference order
+
+For Vietnamese inference, the runtime now prefers:
+
+1. lexicon lookup for known words
+2. trained G2P model for OOV words
+3. deterministic rule-based phonemizer as fallback
+
+That same philosophy is reflected in the full alignment flow.
 
 ## Full alignment flow
 

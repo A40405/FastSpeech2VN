@@ -21,6 +21,12 @@ Giữ nguyên kiến trúc FastSpeech2, nhưng điều chỉnh dữ liệu, text
 - frontend hiện tại vẫn là deterministic bên trong repo, còn G2P model được train từ dữ liệu IPA đã xuất ra
 - vì vậy bản hiện tại nên được hiểu là `ViMFA-inspired IPA pipeline`, chưa phải một bản tích hợp đầy đủ `ViMFA`
 
+### Runtime inference order
+
+- khi synthesize tiếng Việt, runtime ưu tiên tra lexicon trước
+- nếu từ không có trong lexicon, runtime sẽ thử G2P model đã train
+- nếu vẫn không có kết quả, runtime mới rơi về phonemizer rule-based deterministic
+
 ### Quy trình tải dataset
 
 - viết lại `scripts/download_infore1_dataset.py`

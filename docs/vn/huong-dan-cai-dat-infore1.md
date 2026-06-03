@@ -13,6 +13,7 @@ Repository này giữ nguyên kiến trúc FastSpeech2 và thêm pipeline tiến
   - `mfa_assets/infore1_vi.wordlist`
   - `mfa_assets/infore1_vi_symbol_map.tsv`
 - train một G2P model MFA có thể tái sử dụng từ lexicon IPA đã xuất
+- dùng lexicon trước, G2P cho từ ngoài từ điển, rồi mới rơi về rule-based fallback
 - chạy alignment bằng MFA và preprocess FastSpeech2 trong một flow đầy đủ
 - train và infer với FastSpeech2
 
@@ -51,25 +52,17 @@ Chạy toàn bộ pipeline InfoRe1:
 powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1.ps1
 ```
 
-Script wrapper này sẽ gọi luôn pipeline MFA đầy đủ, bao gồm cả bước train G2P.
+Script wrapper này sẽ gọi luôn toàn bộ pipeline MFA, bao gồm bước train G2P.
 
-## Nhánh MFA nghiêm túc
+## Cách inference
 
-Nếu bạn muốn chạy riêng từng bước, dùng:
+Khi synthesize tiếng Việt, `synthesize.py` sẽ theo thứ tự:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1_mfa.ps1
-```
+1. tra lexicon cho từ đã biết
+2. dùng G2P model cho từ ngoài từ điển
+3. cuối cùng mới dùng phonemizer rule-based nếu vẫn chưa có kết quả
 
-Nếu muốn train riêng G2P model MFA từ dữ liệu lexicon IPA tiếng Việt đã xuất ra, chạy tiếp:
-
-```powershell
-python .\scripts\train_vietnamese_g2p.py --mfa mfa --dictionary-path .\mfa_assets\infore1_vi_g2p.tsv --output-model-path .\mfa_assets\infore1_vi_g2p_model.zip --overwrite
-```
-
-Tài liệu chi tiết:
-
-- `mfa-vietnamese-alignment.md`
+Cách này giúp frontend gần với TTS thực tế hơn mà vẫn an toàn nếu thiếu từ trong lexicon hoặc model G2P.
 
 ## Ghi chú
 

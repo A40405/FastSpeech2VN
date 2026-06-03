@@ -13,6 +13,7 @@ This repository keeps the FastSpeech2 architecture and adds a Vietnamese pipelin
   - `mfa_assets/infore1_vi.wordlist`
   - `mfa_assets/infore1_vi_symbol_map.tsv`
 - train a reusable MFA G2P model from the exported IPA lexicon data
+- use lexicon-first inference, then G2P for OOV words, then rule-based fallback
 - run MFA alignment and FastSpeech2 preprocessing in one full pipeline
 - train and infer with FastSpeech2
 
@@ -53,23 +54,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1.ps1
 
 The wrapper script calls the full MFA pipeline, including G2P training.
 
-## Serious MFA path
+## Inference behavior
 
-If you want to run the full pipeline explicitly, use:
+For Vietnamese synthesis, `synthesize.py` now follows this priority:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1_mfa.ps1
-```
+1. lexicon lookup for known words
+2. G2P model lookup for out-of-vocabulary words
+3. deterministic rule-based phonemization as the final fallback
 
-If you also want to train an MFA G2P model from the exported Vietnamese IPA lexicon data, run:
-
-```powershell
-python .\scripts\train_vietnamese_g2p.py --mfa mfa --dictionary-path .\mfa_assets\infore1_vi_g2p.tsv --output-model-path .\mfa_assets\infore1_vi_g2p_model.zip --overwrite
-```
-
-Detailed guide:
-
-- `mfa-vietnamese-alignment.md`
+This keeps inference closer to a real TTS frontend while still remaining robust when a word is missing from the lexicon or the G2P model.
 
 ## Notes
 

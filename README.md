@@ -3,7 +3,7 @@
 This repository is based on `ming024/FastSpeech2` and keeps the original FastSpeech2 architecture.
 The clean branch in this workspace adds a Vietnamese training pipeline for the Hugging Face dataset `doof-ferb/infore1_25hours`.
 
-The Vietnamese frontend now uses an IPA-style phone inventory so the text frontend, MFA lexicon, and alignment labels are closer to a real Vietnamese TTS pipeline such as ViMFA.
+The Vietnamese frontend now uses an IPA-style phone inventory so the text frontend, MFA lexicon, alignment labels, and runtime OOV handling are closer to a real Vietnamese TTS pipeline such as ViMFA.
 
 ![](./img/model.png)
 
@@ -47,7 +47,9 @@ In addition to `.phones` generation, the repo now exports:
 - MFA-style G2P training data: `mfa_assets/infore1_vi_g2p.tsv`
 - an IPA-to-FastSpeech2 symbol map: `mfa_assets/infore1_vi_symbol_map.tsv`
 
-This makes the pipeline closer to ViMFA-style organization, while still keeping FastSpeech2 and the repo's own deterministic Vietnamese frontend.
+The runtime inference order is lexicon first, trained G2P for OOV words second, and rule-based phonemization only as the final fallback.
+
+This makes the pipeline closer to ViMFA-style organization, while still keeping FastSpeech2 and the repo's own Vietnamese frontend self-contained.
 
 ## Upstream FastSpeech2 Notes
 
@@ -67,31 +69,3 @@ pip3 install -r requirements.txt
 You have to download the [pretrained models](https://drive.google.com/drive/folders/1DOhZGlTLMbbAAFZmZGDdc77kz1PloS7F?usp=sharing) and put them in `output/ckpt/LJSpeech/`, `output/ckpt/AISHELL3`, or `output/ckpt/LibriTTS/`.
 
 For English single-speaker TTS, run:
-
-```bash
-python3 synthesize.py --text "YOUR_DESIRED_TEXT" --restore_step 900000 --mode single -p config/LJSpeech/preprocess.yaml -m config/LJSpeech/model.yaml -t config/LJSpeech/train.yaml
-```
-
-For Mandarin multi-speaker TTS, run:
-
-```bash
-python3 synthesize.py --text "大家好" --speaker_id SPEAKER_ID --restore_step 600000 --mode single -p config/AISHELL3/preprocess.yaml -m config/AISHELL3/model.yaml -t config/AISHELL3/train.yaml
-```
-
-For English multi-speaker TTS, run:
-
-```bash
-python3 synthesize.py --text "YOUR_DESIRED_TEXT" --speaker_id SPEAKER_ID --restore_step 800000 --mode single -p config/LibriTTS/preprocess.yaml -m config/LibriTTS/model.yaml -t config/LibriTTS/train.yaml
-```
-
-## Upstream Training Notes
-
-The original repository supports LJSpeech, AISHELL-3, and LibriTTS.
-For the customized Vietnamese InfoRe1 workflow in this clean repo, follow the docs under `docs/`.
-
-## References
-
-- [FastSpeech 2: Fast and High-Quality End-to-End Text to Speech](https://arxiv.org/abs/2006.04558)
-- [xcmyz's FastSpeech implementation](https://github.com/xcmyz/FastSpeech)
-- [TensorSpeech's FastSpeech 2 implementation](https://github.com/TensorSpeech/TensorflowTTS)
-- [rishikksh20's FastSpeech 2 implementation](https://github.com/rishikksh20/FastSpeech2)

@@ -21,6 +21,12 @@ Keep the FastSpeech2 architecture, but adapt the data, text frontend, and workfl
 - the current frontend is deterministic inside this repo, while the G2P model is trained from the exported IPA lexicon data
 - because of that, the current repo should be read as a `ViMFA-inspired IPA pipeline`, not a drop-in ViMFA mirror
 
+### Runtime inference order
+
+- Vietnamese synthesis now prefers lexicon lookup for known words
+- if a word is missing from the lexicon, the runtime tries the trained MFA G2P model
+- if G2P is unavailable or cannot produce a pronunciation, the runtime falls back to the deterministic rule-based frontend
+
 ### Dataset download workflow
 
 - rewrote `scripts/download_infore1_dataset.py`
@@ -39,12 +45,12 @@ Keep the FastSpeech2 architecture, but adapt the data, text frontend, and workfl
 - added `scripts/run_mfa_train_alignment.py`
 - added `scripts/train_vietnamese_g2p.py`
 - added `scripts/prepare_infore1_mfa.ps1`
-- the full path exports the IPA lexicon, G2P training data, word list, and symbol map before training the G2P model and running MFA alignment
+- the full path exports the IPA lexicon, G2P training data, word list, and symbol map before training the G2P model and running MFA acoustic alignment
 
-### Runtime compatibility
+### Sửa tương thích runtime
 
-- updated the audio, preprocessing, and vocoder loading pieces to work with the current Python/librosa/runtime stack
-- improved error handling when a vocoder checkpoint is missing
+- cập nhật các phần audio, preprocessing và vocoder loading để hợp với stack Python/librosa/runtime hiện tại
+- cải thiện xử lý lỗi khi thiếu vocoder checkpoint
 
 ### HiFi-GAN management
 
