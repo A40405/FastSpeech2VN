@@ -1,11 +1,18 @@
-import os
+﻿import os
+import re
+import shutil
 import subprocess
+import tempfile
 import threading
+from functools import lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
 
+import yaml
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
+from text.vietnamese import phonemize_text, text_to_words
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +41,169 @@ class InferRequest(BaseModel):
     pitch_control: float = 1.0
     energy_control: float = 1.0
     duration_control: float = 1.0
+    include_frontend_debug: bool = True
+
+
+def resolve_config_path(config_path: str) -> Path:
+    path = Path(config_path)
+    if path.is_absolute():
+        return path
+    return ROOT / path
+
+
+def load_yaml_config(config_path: str) -> Dict:
+    path = resolve_config_path(config_path)
+    if not path.exists():
+        return {}
+    with path.open("r", encoding="utf-8") as f:
+        return yaml.load(f, Loader=yaml.FullLoader) or {}
+
+
+def read_lexicon(lex_path: Path) -> Dict[str, List[str]]:
+    lexicon: Dict[str, List[str]] = {}
+    if not lex_path.exists():
+        return lexicon
+    with lex_path.open(encoding="utf-8") as f:
+        for line in f:
+            temp = re.split(r"\s+", line.strip("\n"))
+            if len(temp) < 2:
+                continue
+            word = temp[0]
+            phones = temp[1:]
+            if word.lower() not in lexicon:
+                lexicon[word.lower()] = phones
+    return lexicon
+
+
+def resolve_executable(executable: str) -> str:
+    executable_path = Path(executable)
+    if executable_path.is_file():
+        return str(executable_path.resolve())
+    discovered = shutil.which(executable)
+    if discovered:
+        return discovered
+    return executable
+
+
+@lru_cache(maxsize=32)
+def run_mfa_g2p(word_tuple, g2p_model_path, mfa_executable):
+    g2p_model = Path(g2p_model_path)
+    if not g2p_model.exists():
+        return {}
+
+    input_words = [word for word in word_tuple if word]
+    if not input_words:
+        return {}
+
+    resolved_mfa = resolve_executable(mfa_executable)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        input_path = tmpdir / "oovs.txt"
+        output_path = tmpdir / "oovs.dict"
+        input_path.write_text("\n".join(input_words) + "\n", encoding="utf-8")
+
+        command = [
+            resolved_mfa,
+            "g2p",
+            str(input_path),
+            str(g2p_model),
+            str(output_path),
+            "--clean",
+            "--overwrite",
+        ]
+        completed = subprocess.run(command, capture_output=True, text=True)
+        if completed.returncode != 0 or not output_path.exists():
+            return {}
+
+        return read_lexicon(output_path)
+
+
+def build_vietnamese_frontend_debug(text: str, preprocess_config: Dict) -> Dict:
+    path_config = preprocess_config.get("path", {})
+    lexicon_path = path_config.get("lexicon_path")
+    g2p_model_path = path_config.get("g2p_model_path")
+    mfa_executable = path_config.get("mfa_executable", "mfa")
+
+    lexicon = {}
+    if lexicon_path:
+        resolved_lexicon = resolve_config_path(lexicon_path)
+        lexicon = read_lexicon(resolved_lexicon)
+
+    words = text_to_words(text)
+    unknown_words = []
+    for word in words:
+        lookup = word.lower()
+        if lexicon and lookup not in lexicon:
+            unknown_words.append(lookup)
+
+    g2p_pronunciations = {}
+    if unknown_words and g2p_model_path:
+        resolved_g2p = resolve_config_path(g2p_model_path)
+        if resolved_g2p.exists():
+            g2p_pronunciations = run_mfa_g2p(
+                tuple(sorted(set(unknown_words))),
+                str(resolved_g2p),
+                mfa_executable,
+            )
+
+    word_entries = []
+    token_entries = []
+    final_tokens = []
+
+    for index, word in enumerate(words):
+        lookup = word.lower()
+        if lookup in lexicon:
+            source = "lexicon"
+            word_tokens = lexicon[lookup]
+        elif lookup in g2p_pronunciations:
+            source = "g2p"
+            word_tokens = g2p_pronunciations[lookup]
+        else:
+            source = "rule"
+            word_tokens = phonemize_text(word)
+
+        word_entries.append(
+            {
+                "word": word,
+                "source": source,
+                "tokens": word_tokens,
+            }
+        )
+        for token in word_tokens:
+            token_entries.append(
+                {
+                    "word": word,
+                    "token": token,
+                    "source": source,
+                }
+            )
+            final_tokens.append(token)
+        if index != len(words) - 1:
+            token_entries.append(
+                {
+                    "word": word,
+                    "token": "sp",
+                    "source": "separator",
+                }
+            )
+            final_tokens.append("sp")
+
+    if not final_tokens:
+        final_tokens = ["spn"]
+
+    return {
+        "text": text,
+        "words": words,
+        "entries": word_entries,
+        "token_entries": token_entries,
+        "tokens": final_tokens,
+        "lexicon_path": str(resolve_config_path(lexicon_path)) if lexicon_path else None,
+        "g2p_model_path": str(resolve_config_path(g2p_model_path)) if g2p_model_path else None,
+        "sources": {
+            "lexicon": bool(lexicon),
+            "g2p_model": bool(g2p_model_path and resolve_config_path(g2p_model_path).exists()),
+        },
+    }
 
 
 @app.get("/health")
@@ -88,6 +258,12 @@ def infer(req: InferRequest):
     if not req.text.strip():
         raise HTTPException(status_code=400, detail="text is required")
 
+    frontend_debug = None
+    if req.include_frontend_debug:
+        preprocess_config = load_yaml_config(req.preprocess_config)
+        if preprocess_config:
+            frontend_debug = build_vietnamese_frontend_debug(req.text, preprocess_config)
+
     cmd = [
         PYTHON_EXE,
         "synthesize.py",
@@ -125,4 +301,7 @@ def infer(req: InferRequest):
             detail={"error": "synthesize failed", "stderr": proc.stderr[-3000:]},
         )
 
-    return {"ok": True, "stdout_tail": proc.stdout[-1000:]}
+    response = {"ok": True, "stdout_tail": proc.stdout[-1000:]}
+    if frontend_debug is not None:
+        response["frontend_debug"] = frontend_debug
+    return response
