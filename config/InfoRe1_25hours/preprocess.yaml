@@ -5,6 +5,8 @@ path:
   raw_path: "./raw_data/InfoRe1"
   preprocessed_path: "./preprocessed_data/InfoRe1"
   lexicon_path: "./mfa_assets/infore1_vi.dict"
+  g2p_model_path: "./mfa_assets/infore1_vi_g2p_model.zip"
+  mfa_executable: "mfa"
 
 preprocessing:
   val_size: 256

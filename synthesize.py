@@ -1,20 +1,26 @@
-﻿import re
-import argparse
-from string import punctuation
+﻿import argparse
+import os
+import re
+import shutil
+import subprocess
+import tempfile
+from functools import lru_cache
 from pathlib import Path
+from string import punctuation
 
+import numpy as np
 import torch
 import yaml
-import numpy as np
-from torch.utils.data import DataLoader
 from g2p_en import G2p
-from pypinyin import pinyin, Style
+from pypinyin import Style, pinyin
+from torch.utils.data import DataLoader
 
-from utils.model import get_model, get_vocoder
-from utils.tools import to_device, synth_samples
 from dataset import TextDataset
 from text import text_to_sequence
 from text.vietnamese import phonemize_text, text_to_words
+from utils.model import get_model, get_vocoder
+from utils.tools import synth_samples, to_device
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -29,6 +35,50 @@ def read_lexicon(lex_path):
             if word.lower() not in lexicon:
                 lexicon[word.lower()] = phones
     return lexicon
+
+
+def resolve_executable(executable):
+    executable_path = Path(executable)
+    if executable_path.is_file():
+        return str(executable_path.resolve())
+    discovered = shutil.which(executable)
+    if discovered:
+        return discovered
+    return executable
+
+
+@lru_cache(maxsize=32)
+def run_mfa_g2p(word_tuple, g2p_model_path, mfa_executable):
+    g2p_model = Path(g2p_model_path)
+    if not g2p_model.exists():
+        return {}
+
+    input_words = [word for word in word_tuple if word]
+    if not input_words:
+        return {}
+
+    resolved_mfa = resolve_executable(mfa_executable)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        input_path = tmpdir / "oovs.txt"
+        output_path = tmpdir / "oovs.dict"
+        input_path.write_text("\n".join(input_words) + "\n", encoding="utf-8")
+
+        command = [
+            resolved_mfa,
+            "g2p",
+            str(input_path),
+            str(g2p_model),
+            str(output_path),
+            "--clean",
+            "--overwrite",
+        ]
+        print("Running G2P:", " ".join(command))
+        completed = subprocess.run(command, env=os.environ.copy())
+        if completed.returncode != 0 or not output_path.exists():
+            return {}
+
+        return read_lexicon(output_path)
 
 
 def preprocess_english(text, preprocess_config):
@@ -87,21 +137,44 @@ def preprocess_mandarin(text, preprocess_config):
 
 
 def preprocess_vietnamese(text, preprocess_config):
-    lexicon_path = preprocess_config["path"].get("lexicon_path")
+    path_config = preprocess_config["path"]
+    lexicon_path = path_config.get("lexicon_path")
+    g2p_model_path = path_config.get("g2p_model_path")
+    mfa_executable = path_config.get("mfa_executable", "mfa")
+
     lexicon = None
     if lexicon_path and Path(lexicon_path).exists():
         lexicon = read_lexicon(lexicon_path)
 
+    words = text_to_words(text)
+    unknown_words = []
     if lexicon:
-        phones = []
-        words = text_to_words(text)
-        for index, word in enumerate(words):
+        for word in words:
             lookup = word.lower()
-            phones.extend(lexicon.get(lookup, phonemize_text(word)))
-            if index != len(words) - 1:
-                phones.append("sp")
-    else:
-        phones = phonemize_text(text)
+            if lookup not in lexicon:
+                unknown_words.append(lookup)
+
+    g2p_pronunciations = {}
+    if unknown_words and g2p_model_path and Path(g2p_model_path).exists():
+        g2p_pronunciations = run_mfa_g2p(
+            tuple(sorted(set(unknown_words))),
+            g2p_model_path,
+            mfa_executable,
+        )
+
+    phones = []
+    for index, word in enumerate(words):
+        lookup = word.lower()
+        if lexicon and lookup in lexicon:
+            word_phones = lexicon[lookup]
+        elif lookup in g2p_pronunciations:
+            word_phones = g2p_pronunciations[lookup]
+        else:
+            word_phones = phonemize_text(word)
+
+        phones.extend(word_phones)
+        if index != len(words) - 1:
+            phones.append("sp")
 
     phone_text = "{" + " ".join(phones) + "}"
     print("Raw Text Sequence: {}".format(text))
