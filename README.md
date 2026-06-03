@@ -3,7 +3,7 @@
 This repository is based on `ming024/FastSpeech2` and keeps the original FastSpeech2 architecture.
 The clean branch in this workspace adds a Vietnamese training pipeline for the Hugging Face dataset `doof-ferb/infore1_25hours`.
 
-The Vietnamese frontend now uses an IPA-style phone inventory so the text frontend, MFA lexicon, alignment labels, and runtime OOV handling are closer to a real Vietnamese TTS pipeline such as ViMFA.
+The Vietnamese frontend now uses an IPA-style phone inventory so the text frontend, MFA lexicon, alignment labels, runtime OOV handling, and demo packaging are closer to a real Vietnamese TTS pipeline such as ViMFA.
 
 ![](./img/model.png)
 
@@ -16,10 +16,14 @@ Project-specific documentation for the clean Vietnamese pipeline:
 - `docs/en/local-train-guide.md`
 - `docs/en/mfa-vietnamese-alignment.md`
 - `docs/en/vietnamese-pipeline-changes.md`
+- `docs/en/ngrok-services.md`
+- `docs/en/vietnamese-demo.md`
 - `docs/vn/huong-dan-cai-dat-infore1.md`
 - `docs/vn/huong-dan-train-local.md`
 - `docs/vn/alignment-mfa-tieng-viet.md`
 - `docs/vn/thay-doi-pipeline-tieng-viet.md`
+- `docs/vn/dich-vu-ngrok.md`
+- `docs/vn/demo-tieng-viet.md`
 
 ## Clean Repo Purpose
 
@@ -69,3 +73,13 @@ pip3 install -r requirements.txt
 You have to download the [pretrained models](https://drive.google.com/drive/folders/1DOhZGlTLMbbAAFZmZGDdc77kz1PloS7F?usp=sharing) and put them in `output/ckpt/LJSpeech/`, `output/ckpt/AISHELL3`, or `output/ckpt/LibriTTS/`.
 
 For English single-speaker TTS, run:
+
+```bash
+python3 synthesize.py --text "YOUR_DESIRED_TEXT" --restore_step 900000 --mode single -p config/LJSpeech/preprocess.yaml -m config/LJSpeech/model.yaml -t config/LJSpeech/train.yaml
+```
+
+For Mandarin multi-speaker TTS, run:
+
+```bash
+python3 synthesize.py --text "大家好" --speaker_id SPEAKER_ID --restore_step 600000 --mode single -p config/AISHELL3/preprocess.yaml -m config/AISHELL3/model.yaml -t config/AISHELL3/train.yaml
+```
