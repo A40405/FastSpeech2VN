@@ -1,62 +1,63 @@
 ﻿# Vietnamese Pipeline Changes
 
-This document summarizes the project-specific changes made on top of the upstream `ming024/FastSpeech2` repository.
+This document summarizes the main changes added on top of the upstream `ming024/FastSpeech2` repository.
 
 ## Main goal
 
-Keep the FastSpeech2 architecture while adapting the data, text frontend, and workflow for Vietnamese training on `doof-ferb/infore1_25hours`.
+Keep the FastSpeech2 architecture, but adapt the data, text frontend, and workflow for Vietnamese training with `doof-ferb/infore1_25hours`.
 
 ## Major changes
 
-### Vietnamese text frontend
+### Vietnamese frontend
 
 - added `text/vietnamese.py`
-- replaced the old custom `on_ / v_ / cod_ / tone_` inventory with an IPA-style Vietnamese phone inventory
-- kept rule-based `phonemize_text()` for Vietnamese transcript processing, but its output is now IPA-style and ViMFA-oriented
+- replaced the old `on_ / v_ / cod_ / tone_` inventory with an IPA-style Vietnamese phone inventory
+- kept `phonemize_text()` as a deterministic frontend for Vietnamese transcript processing, but the output is now IPA-style and aligned with the lexicon structure used by the repo
+
+### ViMFA-style organization
+
+- the repo follows the practical organization of `ViMFA`: IPA-style lexicon, `lexicon -> MFA -> TextGrid` workflow, and explicit Vietnamese frontend documentation
+- the repo does not bundle the core `ViMFA` resources such as a pretrained G2P model, a pretrained acoustic model, or the exact upstream phone-set package
+- the current frontend is deterministic inside this repo, while the G2P model is trained from the exported IPA lexicon data
+- because of that, the current repo should be read as a `ViMFA-inspired IPA pipeline`, not a drop-in ViMFA mirror
 
 ### Dataset download workflow
 
 - rewrote `scripts/download_infore1_dataset.py`
-- dataset is downloaded into the project workspace instead of depending on `.cache/huggingface`
-- extracted files go to `corpus/infore1_25hours/`
+- the dataset is downloaded directly into the project workspace
+- parquet shards are cached under `corpus/infore1_25hours/`
 
-### InfoRe1 raw-data preparation
+### Raw-data preparation for InfoRe1
 
 - added `preprocessor/infore1.py`
 - updated `prepare_align.py` to support `InfoRe1`
-- raw preparation now writes `.wav`, `.lab`, and `.phones`
+- the raw preparation stage creates `.wav`, `.lab`, and `.phones`
 
-### Bootstrap alignment path
-
-- updated `scripts/bootstrap_textgrids.py`
-- bootstrap TextGrids are generated from `.phones`
-- this is intended for smoke tests and quick setup only
-
-### Serious MFA alignment path
+### Full MFA alignment path
 
 - added `scripts/build_infore1_mfa_assets.py`
 - added `scripts/run_mfa_train_alignment.py`
 - added `scripts/train_vietnamese_g2p.py`
 - added `scripts/prepare_infore1_mfa.ps1`
-- this path now exports an IPA lexicon, G2P training data, a word list, and a symbol map before training MFA
+- the full path exports the IPA lexicon, G2P training data, word list, and symbol map before training the G2P model and running MFA alignment
 
-### Runtime compatibility fixes
+### Runtime compatibility
 
-- updated audio, preprocessing, and vocoder-loading paths for the current Python/librosa/runtime stack
-- improved failure handling when vocoder checkpoints are missing
+- updated the audio, preprocessing, and vocoder loading pieces to work with the current Python/librosa/runtime stack
+- improved error handling when a vocoder checkpoint is missing
 
-### HiFi-GAN handling
+### HiFi-GAN management
 
 - added `scripts/download_hifigan_pretrained.py`
-- updated vocoder loading so missing checkpoints are handled more clearly
+- updated vocoder loading so missing checkpoints fail with a clearer error message
 
 ### Kaggle workflow
 
 - added `requirements-kaggle.txt`
-- the clean repo is prepared for Kaggle notebook usage and reproducible sharing
+- the clean repo is prepared for GitHub sharing and Kaggle runs
 - Kaggle notebooks are kept outside the Git repo in the workspace
 
-### Optional remote service layer
+### Optional remote services
 
 - added `api/train_infer_api.py`
 - added `api/embed_api.py`
@@ -64,5 +65,5 @@ Keep the FastSpeech2 architecture while adapting the data, text frontend, and wo
 
 ## Important note
 
-The clean repo and the local working repo are not the same thing.
-This clean repo is the shareable, lighter version intended for GitHub and Kaggle.
+The clean repo and the local data-heavy repo are not the same thing.
+The clean repo is the shareable version, intended for GitHub and reproducible Kaggle runs.

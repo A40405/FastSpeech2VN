@@ -12,13 +12,14 @@ Giữ nguyên kiến trúc FastSpeech2, nhưng điều chỉnh dữ liệu, text
 
 - thêm `text/vietnamese.py`
 - thay phone inventory cũ dạng `on_ / v_ / cod_ / tone_` bằng phone inventory tiếng Việt kiểu IPA
-- giữ `phonemize_text()` dạng rule-based để xử lý transcript tiếng Việt, nhưng đầu ra bây giờ là IPA-style và hướng theo cách tổ chức lexicon của `ViMFA`
+- giữ `phonemize_text()` dạng deterministic để xử lý transcript tiếng Việt, nhưng đầu ra bây giờ là IPA-style và khớp với cách tổ chức lexicon trong repo
 
 ### Mức độ tận dụng ViMFA
 
 - repo hiện tại học theo hướng tổ chức của `ViMFA`: IPA-style lexicon, workflow `lexicon -> MFA -> TextGrid`, và tài liệu hóa rõ frontend tiếng Việt
-- repo chưa bê nguyên các tài nguyên trọng tâm của `ViMFA` như G2P model đã train, acoustic model đã train, hay toàn bộ phone-set chuẩn hóa của repo đó
-- vì vậy bản hiện tại nên được hiểu là `ViMFA-inspired IPA pipeline`, chưa phải là một bản tích hợp đầy đủ `ViMFA`
+- repo chưa bê nguyên các tài nguyên trọng tâm của `ViMFA` như G2P model đã train sẵn, acoustic model đã train sẵn, hay toàn bộ phone-set chuẩn hóa của repo đó
+- frontend hiện tại vẫn là deterministic bên trong repo, còn G2P model được train từ dữ liệu IPA đã xuất ra
+- vì vậy bản hiện tại nên được hiểu là `ViMFA-inspired IPA pipeline`, chưa phải một bản tích hợp đầy đủ `ViMFA`
 
 ### Quy trình tải dataset
 
@@ -32,19 +33,13 @@ Giữ nguyên kiến trúc FastSpeech2, nhưng điều chỉnh dữ liệu, text
 - cập nhật `prepare_align.py` để hỗ trợ `InfoRe1`
 - bước raw preparation sẽ tạo `.wav`, `.lab` và `.phones`
 
-### Đường bootstrap alignment
-
-- cập nhật `scripts/bootstrap_textgrids.py`
-- TextGrid bootstrap được tạo từ `.phones`
-- đường này chỉ nên dùng cho smoke test hoặc dựng pipeline nhanh
-
-### Đường MFA nghiêm túc hơn
+### Đường MFA đầy đủ
 
 - thêm `scripts/build_infore1_mfa_assets.py`
 - thêm `scripts/run_mfa_train_alignment.py`
 - thêm `scripts/train_vietnamese_g2p.py`
 - thêm `scripts/prepare_infore1_mfa.ps1`
-- đường này bây giờ xuất IPA lexicon, dữ liệu train G2P, word list và symbol map trước khi train MFA
+- đường này xuất IPA lexicon, dữ liệu train G2P, word list và symbol map trước khi train G2P model và chạy MFA acoustic alignment
 
 ### Sửa tương thích runtime
 

@@ -1,116 +1,71 @@
 ﻿# Alignment MFA tiếng Việt
 
-Tài liệu này mô tả đường alignment nghiêm túc hơn cho bản clean của repo FastSpeech2.
+Tài liệu này mô tả đường alignment tiếng Việt đầy đủ trong repo clean.
 
-## Vì sao cần đường này
+## Ý tưởng chính
 
-Đường bootstrap TextGrid trong repo chỉ nên dùng để smoke test nhanh. Nó chia đều thời lượng theo phone token, nên hữu ích để kiểm tra pipeline có chạy end-to-end hay không, nhưng không phải forced alignment thật.
+Repo hiện giữ frontend tiếng Việt kiểu IPA và dùng MFA để alignment.
+Đường được khuyến nghị là pipeline đầy đủ, không phải đường bootstrap xấp xỉ.
 
-Nếu bạn muốn duration target, phone boundary, nhịp đọc và vị trí ngắt nghỉ tốt hơn, hãy dùng Montreal Forced Aligner (MFA).
+## Pipeline tạo ra gì
 
-## Lựa chọn kỹ thuật của repo này
-
-Repo này hiện dùng phone inventory tiếng Việt kiểu IPA trong `text/vietnamese.py`.
-Vì vậy đường nghiêm túc hơn và nhất quán nhất là:
-
-1. tạo từ điển phát âm IPA-style từ chính frontend tiếng Việt của repo
-2. tạo MFA corpus từ raw files đã chuẩn bị
-3. chạy `mfa train` để train MFA acoustic model và xuất TextGrid
-4. chạy `preprocess.py` trên các TextGrid đó
-
-Như vậy label của MFA sẽ khớp với đúng phone symbols kiểu IPA mà FastSpeech2 đang dùng trong repo.
-
-## Repo này đang tận dụng ViMFA ở mức nào
-
-Hiện tại repo học theo cách tổ chức của `ViMFA`: IPA-style lexicon, workflow `lexicon -> MFA -> TextGrid`, và tài liệu hóa rõ frontend tiếng Việt.
-
-Tuy nhiên, repo này chưa bê nguyên các tài nguyên trọng tâm của `ViMFA` như G2P model đã train sẵn, acoustic model đã train sẵn, hay toàn bộ phone-set chuẩn hóa của repo đó.
-Frontend trong repo vẫn là rule-based IPA frontend nội bộ, chưa phải một G2P model học máy riêng.
-
-## Các script liên quan
-
-- `scripts/build_infore1_mfa_assets.py`
-- `scripts/run_mfa_train_alignment.py`
-- `scripts/prepare_infore1_mfa.ps1`
-
-## Cài MFA
-
-Cách khuyến nghị:
-
-```powershell
-conda install -c conda-forge montreal-forced-aligner
-```
-
-Kiểm tra cài đặt:
-
-```powershell
-mfa version
-```
-
-## Quy trình từng bước
-
-### 1) Chuẩn bị raw files
-
-```powershell
-python .\prepare_align.py .\config\InfoRe1_25hours\preprocess.yaml
-```
-
-### 2) Tạo MFA corpus và lexicon
-
-```powershell
-python .\scripts\build_infore1_mfa_assets.py --raw-root .\raw_data\InfoRe1 --corpus-root .\mfa_corpus\InfoRe1 --lexicon-path .\mfa_assets\infore1_vi.dict
-```
-
-Output mong đợi:
-
-- `mfa_corpus/InfoRe1/.../*.wav`
-- `mfa_corpus/InfoRe1/.../*.lab`
 - `mfa_assets/infore1_vi.dict`
+- `mfa_assets/infore1_vi_g2p.tsv`
+- `mfa_assets/infore1_vi.wordlist`
+- `mfa_assets/infore1_vi_symbol_map.tsv`
+- `mfa_assets/infore1_vi_g2p_model.zip`
+- `preprocessed_data/InfoRe1/TextGrid`
 
-### 3) Train MFA và xuất TextGrid
+## Vì sao vẫn chưa phải bản sao đầy đủ của ViMFA
+
+Repo này đã đi theo đúng cấu trúc thực dụng của ViMFA:
+
+- lexicon tiếng Việt kiểu IPA
+- dữ liệu train G2P
+- tài nguyên alignment cho MFA
+- word list và symbol mapping rõ ràng
+
+Tuy nhiên, repo này vẫn chưa bê nguyên các tài nguyên lõi của ViMFA:
+
+- frontend vẫn là rule-based và chạy nội bộ trong repo
+- G2P model được train từ dữ liệu IPA đã xuất ra, chứ không phải lấy thẳng từ ViMFA
+- acoustic alignment model cũng được train trong workflow của repo, chứ không phải bundle sẵn từ ViMFA
+
+Vì vậy, dự án nên được hiểu là `ViMFA-inspired` và gần hơn với một stack TTS tiếng Việt thực tế, nhưng vẫn là một bản tự chứa.
+
+## Luồng alignment đầy đủ
+
+1. tải dataset
+2. chuẩn bị file audio/text thô
+3. xuất MFA assets và bộ train G2P
+4. train MFA G2P model
+5. train MFA acoustic aligner
+6. xuất `TextGrid`
+7. preprocess đặc trưng FastSpeech2
+8. train FastSpeech2
+
+## Chạy local bằng một lệnh
+
+Dùng wrapper pipeline đầy đủ:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1.ps1
+```
+
+Script wrapper này sẽ gọi luôn toàn bộ pipeline MFA, bao gồm bước train G2P.
+
+Nếu muốn chạy tay từng bước alignment, hai lệnh chính là:
+
+```powershell
+python .\scripts\train_vietnamese_g2p.py --mfa mfa --dictionary-path .\mfa_assets\infore1_vi_g2p.tsv --output-model-path .\mfa_assets\infore1_vi_g2p_model.zip --overwrite
+```
 
 ```powershell
 python .\scripts\run_mfa_train_alignment.py --mfa mfa --corpus-root .\mfa_corpus\InfoRe1 --lexicon-path .\mfa_assets\infore1_vi.dict --output-root .\preprocessed_data\InfoRe1\TextGrid --model-path .\mfa_assets\infore1_vi_acoustic_model.zip --num-jobs 4 --single-speaker --overwrite
 ```
 
-Output mong đợi:
+## Ghi chú chất lượng
 
-- `preprocessed_data/InfoRe1/TextGrid/.../*.TextGrid`
-- `mfa_assets/infore1_vi_acoustic_model.zip`
-
-### 4) Preprocess acoustic features
-
-```powershell
-python .\preprocess.py .\config\InfoRe1_25hours\preprocess.yaml
-```
-
-### 5) Train FastSpeech2
-
-```powershell
-python .\train.py -p .\config\InfoRe1_25hours\preprocess.yaml -m .\config\InfoRe1_25hours\model.yaml -t .\config\InfoRe1_25hours\train.yaml
-```
-
-## Bản một lệnh
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\prepare_infore1_mfa.ps1
-```
-
-## Khi nào nên dùng đường này
-
-Dùng MFA khi:
-
-- bạn cần phone boundary thực tế hơn
-- bạn muốn duration supervision tốt hơn
-- bạn muốn một bài train TTS tiếng Việt nghiêm túc hơn
-
-Chỉ dùng bootstrap khi:
-
-- bạn cần smoke test nhanh
-- bạn đang debug preprocessing hoặc training setup
-- bạn chưa muốn cài MFA
-
-## Ghi chú quan trọng
-
-Bản clean này không dùng trực tiếp official pretrained Vietnamese MFA acoustic model.
-Thay vào đó, repo train MFA trên chính pronunciation inventory IPA-style của repo để label đầu ra vẫn tương thích với FastSpeech2 training.
+- Alignment tốt hơn thường tạo duration target tốt hơn cho FastSpeech2.
+- Nếu `TextGrid` đã tồn tại, bạn có thể bỏ qua bước MFA.
+- Repo clean được thiết kế để chia sẻ công khai và tái lập dễ hơn.
