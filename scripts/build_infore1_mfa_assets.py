@@ -1,4 +1,5 @@
-import argparse
+﻿import argparse
+import csv
 import os
 import shutil
 import sys
@@ -8,21 +9,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from text.vietnamese import DIGIT_WORDS, PUNCTUATION, WORD_RE, normalize_text, word_to_phoneme_tokens
-
-def text_to_words(text):
-    words = []
-    for piece in WORD_RE.findall(normalize_text(text)):
-        if piece in PUNCTUATION:
-            continue
-        if piece.isdigit():
-            for digit in piece:
-                spoken = DIGIT_WORDS.get(digit)
-                if spoken:
-                    words.append(spoken)
-            continue
-        words.append(piece)
-    return words
+from text.vietnamese import (
+    iter_symbol_mapping_rows,
+    normalize_text,
+    text_to_words,
+    word_to_phoneme_tokens,
+)
 
 
 def link_or_copy(src, dst):
@@ -35,11 +27,51 @@ def link_or_copy(src, dst):
         shutil.copy2(src, dst)
 
 
-def build_assets(raw_root, corpus_root, lexicon_path):
+def write_lexicon(lexicon, lexicon_path):
+    lexicon_path.parent.mkdir(parents=True, exist_ok=True)
+    with lexicon_path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write("<unk> spn\n")
+        for word in sorted(lexicon):
+            f.write(f"{word} {' '.join(lexicon[word])}\n")
+
+
+def write_wordlist(lexicon, wordlist_path):
+    wordlist_path.parent.mkdir(parents=True, exist_ok=True)
+    with wordlist_path.open("w", encoding="utf-8", newline="\n") as f:
+        for word in sorted(lexicon):
+            f.write(f"{word}\n")
+
+
+def write_g2p_training_data(lexicon, g2p_train_path):
+    g2p_train_path.parent.mkdir(parents=True, exist_ok=True)
+    with g2p_train_path.open("w", encoding="utf-8", newline="\n") as f:
+        for word in sorted(lexicon):
+            f.write(f"{word}\t{' '.join(lexicon[word])}\n")
+
+
+def write_symbol_map(symbol_map_path):
+    symbol_map_path.parent.mkdir(parents=True, exist_ok=True)
+    with symbol_map_path.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.writer(f, delimiter="\t")
+        writer.writerow(["ipa_phone", "fastspeech_symbol", "category"])
+        for row in iter_symbol_mapping_rows():
+            writer.writerow(row)
+
+
+def build_assets(
+    raw_root,
+    corpus_root,
+    lexicon_path,
+    g2p_train_path,
+    wordlist_path,
+    symbol_map_path,
+):
     raw_root = Path(raw_root)
     corpus_root = Path(corpus_root)
     lexicon_path = Path(lexicon_path)
-    lexicon_path.parent.mkdir(parents=True, exist_ok=True)
+    g2p_train_path = Path(g2p_train_path)
+    wordlist_path = Path(wordlist_path)
+    symbol_map_path = Path(symbol_map_path)
 
     lexicon = {}
     utterance_count = 0
@@ -48,43 +80,69 @@ def build_assets(raw_root, corpus_root, lexicon_path):
         speaker_out = corpus_root / speaker_dir.name
         speaker_out.mkdir(parents=True, exist_ok=True)
 
-        for wav_path in sorted(speaker_dir.glob('*.wav')):
-            lab_path = wav_path.with_suffix('.lab')
+        for wav_path in sorted(speaker_dir.glob("*.wav")):
+            lab_path = wav_path.with_suffix(".lab")
             if not lab_path.exists():
                 continue
 
-            raw_text = lab_path.read_text(encoding='utf-8').strip()
+            raw_text = lab_path.read_text(encoding="utf-8").strip()
             words = text_to_words(raw_text)
             if not words:
                 continue
 
-            normalized_transcript = ' '.join(words)
+            normalized_transcript = " ".join(normalize_text(word) for word in words)
             out_wav_path = speaker_out / wav_path.name
-            out_lab_path = speaker_out / f'{wav_path.stem}.lab'
+            out_lab_path = speaker_out / f"{wav_path.stem}.lab"
             link_or_copy(wav_path, out_wav_path)
-            out_lab_path.write_text(normalized_transcript, encoding='utf-8')
+            out_lab_path.write_text(normalized_transcript, encoding="utf-8")
             utterance_count += 1
 
             for word in words:
-                if word not in lexicon:
-                    phones = word_to_phoneme_tokens(word)
-                    lexicon[word] = phones if phones else ['spn']
+                normalized_word = normalize_text(word)
+                if normalized_word not in lexicon:
+                    phones = word_to_phoneme_tokens(normalized_word)
+                    lexicon[normalized_word] = phones if phones else ["spn"]
 
-    with lexicon_path.open('w', encoding='utf-8', newline='\n') as f:
-        f.write('<unk> spn\n')
-        for word in sorted(lexicon):
-            f.write(f"{word} {' '.join(lexicon[word])}\n")
+    write_lexicon(lexicon, lexicon_path)
+    write_wordlist(lexicon, wordlist_path)
+    write_g2p_training_data(lexicon, g2p_train_path)
+    write_symbol_map(symbol_map_path)
 
-    print(f'Prepared MFA corpus: {corpus_root}')
-    print(f'Prepared lexicon: {lexicon_path}')
-    print(f'Utterances: {utterance_count}')
-    print(f'Vocabulary size: {len(lexicon)}')
+    print(f"Prepared MFA corpus: {corpus_root}")
+    print(f"Prepared lexicon: {lexicon_path}")
+    print(f"Prepared G2P training data: {g2p_train_path}")
+    print(f"Prepared word list: {wordlist_path}")
+    print(f"Prepared symbol map: {symbol_map_path}")
+    print(f"Utterances: {utterance_count}")
+    print(f"Vocabulary size: {len(lexicon)}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--raw-root', default='raw_data/InfoRe1', help='Prepared raw corpus root')
-    parser.add_argument('--corpus-root', default='mfa_corpus/InfoRe1', help='Output corpus directory for MFA')
-    parser.add_argument('--lexicon-path', default='mfa_assets/infore1_vi.dict', help='Output pronunciation dictionary path')
+    parser.add_argument("--raw-root", default="raw_data/InfoRe1", help="Prepared raw corpus root")
+    parser.add_argument("--corpus-root", default="mfa_corpus/InfoRe1", help="Output corpus directory for MFA")
+    parser.add_argument("--lexicon-path", default="mfa_assets/infore1_vi.dict", help="Output pronunciation dictionary path")
+    parser.add_argument(
+        "--g2p-train-path",
+        default="mfa_assets/infore1_vi_g2p.tsv",
+        help="Output G2P training data in word<TAB>phones format",
+    )
+    parser.add_argument(
+        "--wordlist-path",
+        default="mfa_assets/infore1_vi.wordlist",
+        help="Output normalized word list for MFA G2P inference",
+    )
+    parser.add_argument(
+        "--symbol-map-path",
+        default="mfa_assets/infore1_vi_symbol_map.tsv",
+        help="Output mapping between IPA phones and FastSpeech2 symbols",
+    )
     args = parser.parse_args()
-    build_assets(args.raw_root, args.corpus_root, args.lexicon_path)
+    build_assets(
+        args.raw_root,
+        args.corpus_root,
+        args.lexicon_path,
+        args.g2p_train_path,
+        args.wordlist_path,
+        args.symbol_map_path,
+    )

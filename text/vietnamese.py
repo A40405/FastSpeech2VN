@@ -62,6 +62,7 @@ VIETNAMESE_IPA_TOKENS = [
 
 # Backward-compatible alias used by older imports.
 VIETNAMESE_PHONE_TOKENS = VIETNAMESE_IPA_TOKENS
+FASTSPEECH_SYMBOL_PREFIX = "@"
 
 WORD_RE = re.compile(r"[0-9A-Za-zÀ-ỹĐđ]+|[^\s]")
 DIGIT_WORDS = {
@@ -293,8 +294,48 @@ VOWEL_MAP = {
 }
 
 
+ONSET_IPA_TOKENS = sorted({token for _, token in ONSET_MAP})
+VOWEL_IPA_TOKENS = sorted(set(VOWEL_MAP.values()))
+CODA_IPA_TOKENS = sorted({token for _, token in CODA_MAP})
+TONE_IPA_TOKENS = [TONE_NAMES[idx] for idx in sorted(TONE_NAMES)]
+SILENCE_IPA_TOKENS = ["sp", "spn", "sil"]
+
+
+TOKEN_CATEGORY_MAP = {}
+for token in ONSET_IPA_TOKENS:
+    TOKEN_CATEGORY_MAP[token] = "onset"
+for token in VOWEL_IPA_TOKENS:
+    TOKEN_CATEGORY_MAP[token] = "vowel"
+for token in CODA_IPA_TOKENS:
+    TOKEN_CATEGORY_MAP[token] = "coda"
+for token in TONE_IPA_TOKENS:
+    TOKEN_CATEGORY_MAP[token] = "tone"
+for token in SILENCE_IPA_TOKENS:
+    TOKEN_CATEGORY_MAP[token] = "special"
+
+
+FASTSPEECH_SYMBOL_MAP = {
+    token: f"{FASTSPEECH_SYMBOL_PREFIX}{token}" for token in VIETNAMESE_IPA_TOKENS
+}
+
+
 def normalize_text(text):
     return unicodedata.normalize("NFC", text.strip().lower())
+
+
+def text_to_words(text):
+    words = []
+    for piece in WORD_RE.findall(normalize_text(text)):
+        if piece in PUNCTUATION:
+            continue
+        if piece.isdigit():
+            for digit in piece:
+                spoken = DIGIT_WORDS.get(digit)
+                if spoken:
+                    words.append(spoken)
+            continue
+        words.append(piece)
+    return words
 
 
 def strip_tone(word):
@@ -363,6 +404,15 @@ def word_to_ipa_tokens(word):
 
 def word_to_phoneme_tokens(word):
     return word_to_ipa_tokens(word)
+
+
+def phones_to_fastspeech_symbols(phones):
+    return [FASTSPEECH_SYMBOL_MAP[phone] for phone in phones if phone in FASTSPEECH_SYMBOL_MAP]
+
+
+def iter_symbol_mapping_rows():
+    for token in VIETNAMESE_IPA_TOKENS:
+        yield token, FASTSPEECH_SYMBOL_MAP[token], TOKEN_CATEGORY_MAP.get(token, "other")
 
 
 def phonemize_text(text):

@@ -1,9 +1,10 @@
-dataset: "InfoRe1"
+﻿dataset: "InfoRe1"
 
 path:
   corpus_path: "./corpus/infore1_25hours"
   raw_path: "./raw_data/InfoRe1"
   preprocessed_path: "./preprocessed_data/InfoRe1"
+  lexicon_path: "./mfa_assets/infore1_vi.dict"
 
 preprocessing:
   val_size: 256

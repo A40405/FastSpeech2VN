@@ -1,6 +1,7 @@
-import re
+﻿import re
 import argparse
 from string import punctuation
+from pathlib import Path
 
 import torch
 import yaml
@@ -13,14 +14,14 @@ from utils.model import get_model, get_vocoder
 from utils.tools import to_device, synth_samples
 from dataset import TextDataset
 from text import text_to_sequence
-from text.vietnamese import phonemize_text
+from text.vietnamese import phonemize_text, text_to_words
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def read_lexicon(lex_path):
     lexicon = {}
-    with open(lex_path) as f:
+    with open(lex_path, encoding="utf-8") as f:
         for line in f:
             temp = re.split(r"\s+", line.strip("\n"))
             word = temp[0]
@@ -86,12 +87,28 @@ def preprocess_mandarin(text, preprocess_config):
 
 
 def preprocess_vietnamese(text, preprocess_config):
-    phones = "{" + " ".join(phonemize_text(text)) + "}"
+    lexicon_path = preprocess_config["path"].get("lexicon_path")
+    lexicon = None
+    if lexicon_path and Path(lexicon_path).exists():
+        lexicon = read_lexicon(lexicon_path)
+
+    if lexicon:
+        phones = []
+        words = text_to_words(text)
+        for index, word in enumerate(words):
+            lookup = word.lower()
+            phones.extend(lexicon.get(lookup, phonemize_text(word)))
+            if index != len(words) - 1:
+                phones.append("sp")
+    else:
+        phones = phonemize_text(text)
+
+    phone_text = "{" + " ".join(phones) + "}"
     print("Raw Text Sequence: {}".format(text))
-    print("Phoneme Sequence: {}".format(phones))
+    print("Phoneme Sequence: {}".format(phone_text))
     sequence = np.array(
         text_to_sequence(
-            phones, preprocess_config["preprocessing"]["text"]["text_cleaners"]
+            phone_text, preprocess_config["preprocessing"]["text"]["text_cleaners"]
         )
     )
     return np.array(sequence)
@@ -104,12 +121,11 @@ def synthesize(model, step, configs, vocoder, batchs, control_values):
     for batch in batchs:
         batch = to_device(batch, device)
         with torch.no_grad():
-            # Forward
             output = model(
                 *(batch[2:]),
                 p_control=pitch_control,
                 e_control=energy_control,
-                d_control=duration_control
+                d_control=duration_control,
             )
             synth_samples(
                 batch,
@@ -122,7 +138,6 @@ def synthesize(model, step, configs, vocoder, batchs, control_values):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--restore_step", type=int, required=True)
     parser.add_argument(
@@ -183,13 +198,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Check source texts
     if args.mode == "batch":
         assert args.source is not None and args.text is None
     if args.mode == "single":
         assert args.source is None and args.text is not None
 
-    # Read Config
     preprocess_config = yaml.load(
         open(args.preprocess_config, "r"), Loader=yaml.FullLoader
     )
@@ -197,15 +210,10 @@ if __name__ == "__main__":
     train_config = yaml.load(open(args.train_config, "r"), Loader=yaml.FullLoader)
     configs = (preprocess_config, model_config, train_config)
 
-    # Get model
     model = get_model(args, configs, device, train=False)
-
-    # Load vocoder
     vocoder = get_vocoder(model_config, device)
 
-    # Preprocess texts
     if args.mode == "batch":
-        # Get dataset
         dataset = TextDataset(args.source, preprocess_config)
         batchs = DataLoader(
             dataset,
@@ -225,5 +233,4 @@ if __name__ == "__main__":
         batchs = [(ids, raw_texts, speakers, texts, text_lens, max(text_lens))]
 
     control_values = args.pitch_control, args.energy_control, args.duration_control
-
     synthesize(model, args.restore_step, configs, vocoder, batchs, control_values)
