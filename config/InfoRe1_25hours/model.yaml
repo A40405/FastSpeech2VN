@@ -1,4 +1,4 @@
-transformer:
+﻿transformer:
   encoder_layer: 4
   encoder_head: 2
   encoder_hidden: 256
@@ -25,5 +25,5 @@ multi_speaker: False
 max_seq_len: 1000
 
 vocoder:
-  model: null
+  model: "HiFi-GAN"
   speaker: "universal"
