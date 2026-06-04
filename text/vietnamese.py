@@ -13,6 +13,7 @@ VIETNAMESE_IPA_TOKENS = [
     "i",
     "j",
     "k",
+    "k̚",
     "kʰ",
     "kw",
     "l",
