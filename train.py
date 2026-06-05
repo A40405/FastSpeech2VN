@@ -4,7 +4,6 @@ import os
 import torch
 import yaml
 import torch.nn as nn
-from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -19,6 +18,12 @@ from evaluate import evaluate
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+def create_grad_scaler(use_amp):
+    if hasattr(torch, "amp") and hasattr(torch.amp, "GradScaler"):
+        return torch.amp.GradScaler("cuda", enabled=use_amp)
+    return torch.cuda.amp.GradScaler(enabled=use_amp)
+
+
 def main(args, configs):
     print("Prepare training ...")
 
@@ -31,7 +36,7 @@ def main(args, configs):
 
     gpu_count = torch.cuda.device_count() if device.type == "cuda" else 0
     use_amp = bool(accelerator_config.get("use_amp", False) and device.type == "cuda")
-    scaler = GradScaler(enabled=use_amp)
+    scaler = create_grad_scaler(use_amp)
 
     if gpu_count > 0:
         gpu_names = [torch.cuda.get_device_name(i) for i in range(gpu_count)]
@@ -115,7 +120,7 @@ def main(args, configs):
             for batch in batchs:
                 batch = to_device(batch, device)
 
-                with autocast(enabled=use_amp):
+                with torch.amp.autocast(device_type="cuda", enabled=use_amp):
                     output = model(*(batch[2:]))
                     losses = Loss(batch, output)
                     total_loss = losses[0]

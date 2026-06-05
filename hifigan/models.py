@@ -2,7 +2,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Conv1d, ConvTranspose1d
-from torch.nn.utils import weight_norm, remove_weight_norm
+try:
+    from torch.nn.utils.parametrizations import weight_norm as apply_weight_norm
+    from torch.nn.utils.parametrize import remove_parametrizations
+
+    def weight_norm(module):
+        return apply_weight_norm(module)
+
+    def remove_weight_norm(module):
+        return remove_parametrizations(module, "weight", leave_parametrized=True)
+except ImportError:
+    from torch.nn.utils import weight_norm, remove_weight_norm
 
 LRELU_SLOPE = 0.1
 
