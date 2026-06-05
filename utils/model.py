@@ -9,6 +9,12 @@ import hifigan
 from model import FastSpeech2, ScheduledOptim
 
 
+def load_torch_checkpoint(path, map_location=None):
+    # FastSpeech2 checkpoints in this repo store optimizer/model dicts created
+    # before PyTorch changed torch.load default to weights_only=True.
+    return torch.load(path, map_location=map_location, weights_only=False)
+
+
 def get_model(args, configs, device, train=False):
     (preprocess_config, model_config, train_config) = configs
 
@@ -18,7 +24,7 @@ def get_model(args, configs, device, train=False):
             train_config["path"]["ckpt_path"],
             "{}.pth.tar".format(args.restore_step),
         )
-        ckpt = torch.load(ckpt_path)
+        ckpt = load_torch_checkpoint(ckpt_path, map_location=device)
         model.load_state_dict(ckpt["model"])
 
     if train:
@@ -82,7 +88,7 @@ def get_vocoder(config, device):
                 .format(ckpt_path)
             )
             return None
-        ckpt = torch.load(ckpt_path, map_location=device)
+        ckpt = load_torch_checkpoint(ckpt_path, map_location=device)
         vocoder.load_state_dict(ckpt["generator"])
         vocoder.eval()
         vocoder.remove_weight_norm()
