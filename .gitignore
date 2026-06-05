@@ -118,6 +118,9 @@ output/
 *.npy
 TextGrid/
 hifigan/*.pth.tar
+hifigan/*.pth.tar.zip
+hifigan/*.part
+hifigan/_tmp_pretrained/
 *.ckpt
 *.pt
 *.pth
