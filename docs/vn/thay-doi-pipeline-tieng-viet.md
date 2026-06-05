@@ -72,5 +72,4 @@ Giữ nguyên kiến trúc FastSpeech2, nhưng điều chỉnh dữ liệu, text
 
 ## Ghi chú quan trọng
 
-Repo clean và repo local đang chạy dữ liệu thật không phải là một.
 Bản clean là bản gọn hơn, dùng để chia sẻ lên GitHub và chạy lại trên Kaggle.

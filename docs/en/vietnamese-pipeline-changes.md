@@ -72,5 +72,4 @@ Keep the FastSpeech2 architecture, but adapt the data, text frontend, and workfl
 
 ## Important note
 
-The clean repo and the local data-heavy repo are not the same thing.
 The clean repo is the shareable version, intended for GitHub and reproducible Kaggle runs.

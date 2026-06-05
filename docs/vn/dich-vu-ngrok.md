@@ -68,8 +68,8 @@ Nó chỉ trả về debug frontend, không sinh WAV, nên rất tiện để ki
 {
   "ok": true,
   "frontend_debug": {
-    "text": "xin chao abc",
-    "words": ["xin", "chao", "abc"],
+    "text": "xin chào abc",
+    "words": ["xin", "chào", "abc"],
     "entries": [
       {
         "word": "xin",

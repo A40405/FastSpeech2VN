@@ -57,7 +57,7 @@ It returns the frontend breakdown without synthesizing WAV, so it is useful for 
 
 ```json
 {
-  "text": "xin chao abc",
+  "text": "xin chàoabc",
   "preprocess_config": "config/InfoRe1_25hours/preprocess.yaml"
 }
 ```
@@ -68,8 +68,8 @@ It returns the frontend breakdown without synthesizing WAV, so it is useful for 
 {
   "ok": true,
   "frontend_debug": {
-    "text": "xin chao abc",
-    "words": ["xin", "chao", "abc"],
+    "text": "xin chào abc",
+    "words": ["xin", "chào", "abc"],
     "entries": [
       {
         "word": "xin",
