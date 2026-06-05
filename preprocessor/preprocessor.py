@@ -192,8 +192,8 @@ class Preprocessor:
 
         # Compute mel-scale spectrogram and energy
         mel_spectrogram, energy = Audio.tools.get_mel_from_wav(wav, self.STFT)
-        mel_spectrogram = mel_spectrogram[:, : sum(duration)]
-        energy = energy[: sum(duration)]
+        mel_spectrogram = mel_spectrogram[:, : sum(duration)].astype(np.float32)
+        energy = energy[: sum(duration)].astype(np.float32)
 
         if self.pitch_phoneme_averaging:
             # perform linear interpolation
@@ -214,7 +214,7 @@ class Preprocessor:
                 else:
                     pitch[i] = 0
                 pos += d
-            pitch = pitch[: len(duration)]
+            pitch = pitch[: len(duration)].astype(np.float32)
 
         if self.energy_phoneme_averaging:
             # Phoneme-level average
@@ -225,7 +225,11 @@ class Preprocessor:
                 else:
                     energy[i] = 0
                 pos += d
-            energy = energy[: len(duration)]
+            energy = energy[: len(duration)].astype(np.float32)
+
+        pitch = pitch.astype(np.float32)
+        energy = energy.astype(np.float32)
+        duration = np.asarray(duration, dtype=np.int64)
 
         # Save files
         dur_filename = "{}-duration-{}.npy".format(speaker, basename)
@@ -240,7 +244,7 @@ class Preprocessor:
         mel_filename = "{}-mel-{}.npy".format(speaker, basename)
         np.save(
             os.path.join(self.out_dir, "mel", mel_filename),
-            mel_spectrogram.T,
+            mel_spectrogram.T.astype(np.float32),
         )
 
         return (
@@ -305,7 +309,9 @@ class Preprocessor:
         min_value = np.finfo(np.float64).max
         for filename in os.listdir(in_dir):
             filename = os.path.join(in_dir, filename)
-            values = (np.load(filename) - mean) / std
+            values = ((np.load(filename).astype(np.float32) - mean) / std).astype(
+                np.float32
+            )
             np.save(filename, values)
 
             max_value = max(max_value, max(values))

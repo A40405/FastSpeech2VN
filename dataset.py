@@ -40,25 +40,25 @@ class Dataset(Dataset):
             "mel",
             "{}-mel-{}.npy".format(speaker, basename),
         )
-        mel = np.load(mel_path)
+        mel = np.load(mel_path).astype(np.float32)
         pitch_path = os.path.join(
             self.preprocessed_path,
             "pitch",
             "{}-pitch-{}.npy".format(speaker, basename),
         )
-        pitch = np.load(pitch_path)
+        pitch = np.load(pitch_path).astype(np.float32)
         energy_path = os.path.join(
             self.preprocessed_path,
             "energy",
             "{}-energy-{}.npy".format(speaker, basename),
         )
-        energy = np.load(energy_path)
+        energy = np.load(energy_path).astype(np.float32)
         duration_path = os.path.join(
             self.preprocessed_path,
             "duration",
             "{}-duration-{}.npy".format(speaker, basename),
         )
-        duration = np.load(duration_path)
+        duration = np.load(duration_path).astype(np.int64)
 
         sample = {
             "id": basename,
