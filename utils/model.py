@@ -99,7 +99,7 @@ def vocoder_infer(mels, vocoder, model_config, preprocess_config, lengths=None):
         if name == "MelGAN":
             wavs = vocoder.inverse(mels / np.log(10))
         elif name == "HiFi-GAN":
-            wavs = vocoder(mels).squeeze(1)
+            wavs = vocoder(mels.float()).squeeze(1)
 
     wavs = (
         wavs.cpu().numpy()
