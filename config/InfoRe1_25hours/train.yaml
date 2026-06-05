@@ -17,7 +17,8 @@ step:
   log_step: 50
   synth_step: 500
   val_step: 1000
-  save_step: 10000
+  save_step: 6000
+  keep_best_ckpts: 3
 dataloader:
   group_size: 4
   num_workers: 4

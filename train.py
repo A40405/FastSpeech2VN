@@ -1,4 +1,5 @@
-﻿import argparse
+import argparse
+import json
 import os
 
 import torch
@@ -22,6 +23,53 @@ def create_grad_scaler(use_amp):
     if hasattr(torch, "amp") and hasattr(torch.amp, "GradScaler"):
         return torch.amp.GradScaler("cuda", enabled=use_amp)
     return torch.cuda.amp.GradScaler(enabled=use_amp)
+
+
+def load_best_checkpoint_records(ckpt_dir):
+    metadata_path = os.path.join(ckpt_dir, "best_checkpoints.json")
+    if not os.path.exists(metadata_path):
+        return [], metadata_path
+
+    with open(metadata_path, "r", encoding="utf-8") as f:
+        records = json.load(f)
+
+    records = [
+        record
+        for record in records
+        if os.path.exists(os.path.join(ckpt_dir, record["filename"]))
+    ]
+    return records, metadata_path
+
+
+def save_best_checkpoint(ckpt_dir, step, score, state, keep):
+    os.makedirs(ckpt_dir, exist_ok=True)
+    records, metadata_path = load_best_checkpoint_records(ckpt_dir)
+
+    filename = "{}.pth.tar".format(step)
+    ckpt_path = os.path.join(ckpt_dir, filename)
+    state = dict(state)
+    state["validation_total_loss"] = float(score)
+    state["step"] = step
+    torch.save(state, ckpt_path)
+
+    records.append(
+        {"filename": filename, "step": step, "validation_total_loss": float(score)}
+    )
+    records.sort(key=lambda record: (record["validation_total_loss"], record["step"]))
+
+    kept = records[:keep]
+    kept_names = {record["filename"] for record in kept}
+    removed = []
+    for record in records[keep:]:
+        old_path = os.path.join(ckpt_dir, record["filename"])
+        if os.path.exists(old_path):
+            os.remove(old_path)
+            removed.append(record["filename"])
+
+    with open(metadata_path, "w", encoding="utf-8") as f:
+        json.dump(kept, f, indent=2)
+
+    return filename in kept_names, removed
 
 
 def main(args, configs):
@@ -107,6 +155,8 @@ def main(args, configs):
     save_step = train_config["step"]["save_step"]
     synth_step = train_config["step"]["synth_step"]
     val_step = train_config["step"]["val_step"]
+    keep_best_ckpts = train_config["step"].get("keep_best_ckpts", 3)
+    latest_val_total_loss = None
 
     optimizer.zero_grad()
 
@@ -184,24 +234,56 @@ def main(args, configs):
 
                 if step % val_step == 0:
                     model.eval()
-                    message = evaluate(model, step, configs, val_logger, vocoder)
+                    message, val_losses = evaluate(
+                        model, step, configs, val_logger, vocoder
+                    )
+                    latest_val_total_loss = val_losses[0]
                     with open(os.path.join(val_log_path, "log.txt"), "a") as f:
                         f.write(message + "\n")
                     outer_bar.write(message)
                     model.train()
 
                 if step % save_step == 0:
-                    model_state = model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict()
-                    torch.save(
-                        {
-                            "model": model_state,
-                            "optimizer": optimizer._optimizer.state_dict(),
-                        },
-                        os.path.join(
+                    if latest_val_total_loss is None:
+                        outer_bar.write(
+                            "Skip checkpoint at step {} because no validation loss is available yet.".format(
+                                step
+                            )
+                        )
+                    else:
+                        model_state = (
+                            model.module.state_dict()
+                            if isinstance(model, nn.DataParallel)
+                            else model.state_dict()
+                        )
+                        kept, removed = save_best_checkpoint(
                             train_config["path"]["ckpt_path"],
-                            "{}.pth.tar".format(step),
-                        ),
-                    )
+                            step,
+                            latest_val_total_loss,
+                            {
+                                "model": model_state,
+                                "optimizer": optimizer._optimizer.state_dict(),
+                            },
+                            keep_best_ckpts,
+                        )
+                        if kept:
+                            outer_bar.write(
+                                "Saved checkpoint {} with validation total loss {:.4f}".format(
+                                    step, latest_val_total_loss
+                                )
+                            )
+                        else:
+                            outer_bar.write(
+                                "Checkpoint {} was pruned immediately; better checkpoints already exist.".format(
+                                    step
+                                )
+                            )
+                        if removed:
+                            outer_bar.write(
+                                "Removed old checkpoints: {}".format(
+                                    ", ".join(removed)
+                                )
+                            )
 
                 if step == total_step:
                     quit()
@@ -238,4 +320,3 @@ if __name__ == "__main__":
     configs = (preprocess_config, model_config, train_config)
 
     main(args, configs)
-
