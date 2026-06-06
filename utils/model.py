@@ -1,6 +1,7 @@
 import os
 import json
 import zipfile
+import sys
 
 import torch
 import numpy as np
@@ -9,9 +10,24 @@ import hifigan
 from model import FastSpeech2, ScheduledOptim
 
 
+def patch_numpy_compat():
+    # Some checkpoints were saved in environments that serialized numpy internals
+    # under `numpy._core.*`, while older local envs may only expose `numpy.core.*`.
+    if "numpy._core" not in sys.modules:
+        import numpy.core as numpy_core
+
+        sys.modules["numpy._core"] = numpy_core
+
+    if "numpy._core.multiarray" not in sys.modules:
+        import numpy.core.multiarray as numpy_core_multiarray
+
+        sys.modules["numpy._core.multiarray"] = numpy_core_multiarray
+
+
 def load_torch_checkpoint(path, map_location=None):
     # FastSpeech2 checkpoints in this repo store optimizer/model dicts created
     # before PyTorch changed torch.load default to weights_only=True.
+    patch_numpy_compat()
     return torch.load(path, map_location=map_location, weights_only=False)
 
 

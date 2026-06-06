@@ -10,9 +10,14 @@ from typing import Dict, List, Optional
 
 import yaml
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
-from text.vietnamese import phonemize_text, text_to_words
+from text.vietnamese import (
+    PAUSE_WORD,
+    normalize_text,
+    text_to_training_units,
+    word_to_phoneme_tokens,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,17 +31,23 @@ _train_lock = threading.Lock()
 
 
 class TrainRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
     preprocess_config: str = "config/InfoRe1_25hours/preprocess.yaml"
-    model_config: str = "config/InfoRe1_25hours/model.yaml"
+    model_cfg: str = Field(
+        default="config/InfoRe1_25hours/model.yaml", alias="model_config"
+    )
     train_config: str = "config/InfoRe1_25hours/train.yaml"
     restore_step: int = 0
 
 
 class InferRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
     text: str
     restore_step: int
     preprocess_config: str = "config/InfoRe1_25hours/preprocess.yaml"
-    model_config: str = "config/InfoRe1_25hours/model.yaml"
+    model_cfg: str = Field(
+        default="config/InfoRe1_25hours/model.yaml", alias="model_config"
+    )
     train_config: str = "config/InfoRe1_25hours/train.yaml"
     speaker_id: int = 0
     pitch_control: float = 1.0
@@ -135,7 +146,7 @@ def build_vietnamese_frontend_debug(text: str, preprocess_config: Dict) -> Dict:
         resolved_lexicon = resolve_config_path(lexicon_path)
         lexicon = read_lexicon(resolved_lexicon)
 
-    words = text_to_words(text)
+    words = [unit for unit in text_to_training_units(text) if unit != PAUSE_WORD]
     unknown_words = []
     for word in words:
         lookup = word.lower()
@@ -156,7 +167,12 @@ def build_vietnamese_frontend_debug(text: str, preprocess_config: Dict) -> Dict:
     token_entries = []
     final_tokens = []
 
-    for index, word in enumerate(words):
+    for word in text_to_training_units(text):
+        if word == PAUSE_WORD:
+            token_entries.append({"word": word, "token": "sp", "source": "punctuation"})
+            final_tokens.append("sp")
+            continue
+
         lookup = word.lower()
         if lookup in lexicon:
             source = "lexicon"
@@ -166,15 +182,12 @@ def build_vietnamese_frontend_debug(text: str, preprocess_config: Dict) -> Dict:
             word_tokens = g2p_pronunciations[lookup]
         else:
             source = "rule"
-            word_tokens = phonemize_text(word)
+            word_tokens = word_to_phoneme_tokens(normalize_text(word))
 
         word_entries.append({"word": word, "source": source, "tokens": word_tokens})
         for token in word_tokens:
             token_entries.append({"word": word, "token": token, "source": source})
             final_tokens.append(token)
-        if index != len(words) - 1:
-            token_entries.append({"word": word, "token": "sp", "source": "separator"})
-            final_tokens.append("sp")
 
     if not final_tokens:
         final_tokens = ["spn"]
@@ -212,7 +225,7 @@ def start_train(req: TrainRequest):
             "-p",
             req.preprocess_config,
             "-m",
-            req.model_config,
+            req.model_cfg,
             "-t",
             req.train_config,
         ]
@@ -266,7 +279,7 @@ def infer(req: InferRequest):
         "-p",
         req.preprocess_config,
         "-m",
-        req.model_config,
+        req.model_cfg,
         "-t",
         req.train_config,
         "--pitch_control",

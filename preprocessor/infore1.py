@@ -6,7 +6,7 @@ import numpy as np
 from scipy.io import wavfile
 from tqdm import tqdm
 
-from text.vietnamese import phonemize_text
+from text.vietnamese import text_to_phone_tokens
 
 
 def prepare_align(config):
@@ -24,18 +24,18 @@ def prepare_align(config):
 
             base_name = parts[0]
             raw_text = parts[2].strip()
-            phone_tokens = phonemize_text(raw_text)
+            phone_tokens = text_to_phone_tokens(raw_text)
 
             wav_path = os.path.join(in_dir, "wavs", f"{base_name}.wav")
             if os.path.exists(wav_path):
                 speaker_dir = os.path.join(out_dir, speaker)
                 os.makedirs(speaker_dir, exist_ok=True)
                 wav, _ = librosa.load(wav_path, sr=sampling_rate)
-                wav = wav / max(abs(wav)) * max_wav_value
+                wav = np.clip(wav, -1.0, 1.0)
                 wavfile.write(
                     os.path.join(speaker_dir, f"{base_name}.wav"),
                     sampling_rate,
-                    wav.astype(np.int16),
+                    (wav * max_wav_value).astype(np.int16),
                 )
                 with open(
                     os.path.join(speaker_dir, f"{base_name}.lab"),

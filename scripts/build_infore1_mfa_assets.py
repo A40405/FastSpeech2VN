@@ -10,9 +10,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from text.vietnamese import (
+    PAUSE_WORD,
     iter_symbol_mapping_rows,
     normalize_text,
-    text_to_words,
+    text_to_training_units,
     word_to_phoneme_tokens,
 )
 
@@ -31,6 +32,7 @@ def write_lexicon(lexicon, lexicon_path):
     lexicon_path.parent.mkdir(parents=True, exist_ok=True)
     with lexicon_path.open("w", encoding="utf-8", newline="\n") as f:
         f.write("<unk> spn\n")
+        f.write(f"{PAUSE_WORD} sp\n")
         for word in sorted(lexicon):
             f.write(f"{word} {' '.join(lexicon[word])}\n")
 
@@ -86,18 +88,22 @@ def build_assets(
                 continue
 
             raw_text = lab_path.read_text(encoding="utf-8").strip()
-            words = text_to_words(raw_text)
-            if not words:
+            units = text_to_training_units(raw_text)
+            if not units:
                 continue
 
-            normalized_transcript = " ".join(normalize_text(word) for word in words)
+            normalized_transcript = " ".join(
+                unit if unit == PAUSE_WORD else normalize_text(unit) for unit in units
+            )
             out_wav_path = speaker_out / wav_path.name
             out_lab_path = speaker_out / f"{wav_path.stem}.lab"
             link_or_copy(wav_path, out_wav_path)
             out_lab_path.write_text(normalized_transcript, encoding="utf-8")
             utterance_count += 1
 
-            for word in words:
+            for word in units:
+                if word == PAUSE_WORD:
+                    continue
                 normalized_word = normalize_text(word)
                 if normalized_word not in lexicon:
                     phones = word_to_phoneme_tokens(normalized_word)

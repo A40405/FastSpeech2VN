@@ -79,6 +79,8 @@ DIGIT_WORDS = {
     "9": "chin",
 }
 PUNCTUATION = set(",.;:!?\"'()[]{}-/")
+PAUSE_PUNCTUATION = set(",.;:!?")
+PAUSE_WORD = "<sp>"
 TONE_NAMES = {
     0: "˧",
     1: "˧˥",
@@ -324,19 +326,106 @@ def normalize_text(text):
     return unicodedata.normalize("NFC", text.strip().lower())
 
 
-def text_to_words(text):
+def _read_two_digits(number, full=False):
+    tens = number // 10
+    units = number % 10
+    words = []
+
+    if tens == 0:
+        if units == 0:
+            return words
+        if full:
+            words.append("linh")
+        words.append(DIGIT_WORDS[str(units)])
+        return words
+
+    if tens == 1:
+        words.append("muoi")
+    else:
+        words.extend([DIGIT_WORDS[str(tens)], "muoi"])
+
+    if units == 0:
+        return words
+    if units == 5:
+        words.append("lam")
+    else:
+        words.append(DIGIT_WORDS[str(units)])
+    return words
+
+
+def _read_three_digits(number, full=False):
+    hundreds = number // 100
+    remainder = number % 100
+    words = []
+
+    if hundreds > 0:
+        words.extend([DIGIT_WORDS[str(hundreds)], "tram"])
+        words.extend(_read_two_digits(remainder, full=remainder > 0))
+        return words
+
+    if full and remainder > 0:
+        words.extend(["khong", "tram"])
+        words.extend(_read_two_digits(remainder, full=True))
+        return words
+
+    return _read_two_digits(remainder, full=False)
+
+
+def number_to_words(number_text):
+    if not number_text:
+        return []
+    if len(number_text) > 1 and number_text.startswith("0"):
+        return [DIGIT_WORDS[digit] for digit in number_text if digit in DIGIT_WORDS]
+
+    number = int(number_text)
+    if number == 0:
+        return [DIGIT_WORDS["0"]]
+
+    unit_names = ["", "nghin", "trieu", "ty", "nghin ty", "trieu ty"]
+    groups = []
+    while number > 0:
+        groups.append(number % 1000)
+        number //= 1000
+
+    words = []
+    highest = len(groups) - 1
+    for idx in range(highest, -1, -1):
+        group = groups[idx]
+        if group == 0:
+            continue
+        full = idx != highest and group < 100
+        group_words = _read_three_digits(group, full=full)
+        words.extend(group_words)
+        unit_name = unit_names[idx] if idx < len(unit_names) else ""
+        if unit_name:
+            words.append(unit_name)
+    return words
+
+
+def text_to_units(text, preserve_pauses=False):
     words = []
     for piece in WORD_RE.findall(normalize_text(text)):
         if piece in PUNCTUATION:
+            if preserve_pauses and piece in PAUSE_PUNCTUATION:
+                if words and words[-1] != PAUSE_WORD:
+                    words.append(PAUSE_WORD)
             continue
         if piece.isdigit():
-            for digit in piece:
-                spoken = DIGIT_WORDS.get(digit)
-                if spoken:
-                    words.append(spoken)
+            words.extend(number_to_words(piece))
             continue
         words.append(piece)
+    if preserve_pauses:
+        while words and words[-1] == PAUSE_WORD:
+            words.pop()
     return words
+
+
+def text_to_words(text):
+    return text_to_units(text, preserve_pauses=False)
+
+
+def text_to_training_units(text):
+    return text_to_units(text, preserve_pauses=True)
 
 
 def strip_tone(word):
@@ -372,13 +461,14 @@ def word_to_ipa_tokens(word):
     if not word:
         return []
 
+    if word == PAUSE_WORD:
+        return ["sp"]
+
     if all(char.isdigit() for char in word):
         tokens = []
-        for idx, digit in enumerate(word):
-            tokens.extend(word_to_ipa_tokens(DIGIT_WORDS.get(digit, "")))
-            if idx != len(word) - 1:
-                tokens.append("sp")
-        return tokens
+        for spoken_word in number_to_words(word):
+            tokens.extend(word_to_ipa_tokens(spoken_word))
+        return tokens or ["spn"]
 
     normalized, tone = strip_tone(word)
     onset_token, remainder = split_onset(normalized)
@@ -407,6 +497,19 @@ def word_to_phoneme_tokens(word):
     return word_to_ipa_tokens(word)
 
 
+def words_to_phone_tokens(words):
+    tokens = []
+    for word in words:
+        normalized_word = normalize_text(word)
+        if normalized_word:
+            tokens.extend(word_to_phoneme_tokens(normalized_word))
+    return tokens or ["spn"]
+
+
+def text_to_phone_tokens(text):
+    return words_to_phone_tokens(text_to_training_units(text))
+
+
 def phones_to_fastspeech_symbols(phones):
     return [FASTSPEECH_SYMBOL_MAP[phone] for phone in phones if phone in FASTSPEECH_SYMBOL_MAP]
 
@@ -417,15 +520,4 @@ def iter_symbol_mapping_rows():
 
 
 def phonemize_text(text):
-    tokens = []
-    for piece in WORD_RE.findall(normalize_text(text)):
-        if piece in PUNCTUATION:
-            if not tokens or tokens[-1] != "sp":
-                tokens.append("sp")
-            continue
-
-        tokens.extend(word_to_ipa_tokens(piece))
-
-    while tokens and tokens[-1] == "sp":
-        tokens.pop()
-    return tokens or ["spn"]
+    return words_to_phone_tokens(text_to_training_units(text))

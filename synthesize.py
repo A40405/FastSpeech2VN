@@ -17,7 +17,12 @@ from torch.utils.data import DataLoader
 
 from dataset import TextDataset
 from text import text_to_sequence
-from text.vietnamese import phonemize_text, text_to_words
+from text.vietnamese import (
+    PAUSE_WORD,
+    normalize_text,
+    text_to_training_units,
+    word_to_phoneme_tokens,
+)
 from utils.model import get_model, get_vocoder
 from utils.tools import synth_samples, to_device
 
@@ -146,7 +151,7 @@ def preprocess_vietnamese(text, preprocess_config):
     if lexicon_path and Path(lexicon_path).exists():
         lexicon = read_lexicon(lexicon_path)
 
-    words = text_to_words(text)
+    words = [unit for unit in text_to_training_units(text) if unit != PAUSE_WORD]
     unknown_words = []
     if lexicon:
         for word in words:
@@ -163,18 +168,20 @@ def preprocess_vietnamese(text, preprocess_config):
         )
 
     phones = []
-    for index, word in enumerate(words):
-        lookup = word.lower()
+    for word in text_to_training_units(text):
+        if word == PAUSE_WORD:
+            phones.append("sp")
+            continue
+
+        lookup = normalize_text(word)
         if lexicon and lookup in lexicon:
             word_phones = lexicon[lookup]
         elif lookup in g2p_pronunciations:
             word_phones = g2p_pronunciations[lookup]
         else:
-            word_phones = phonemize_text(word)
+            word_phones = word_to_phoneme_tokens(lookup)
 
         phones.extend(word_phones)
-        if index != len(words) - 1:
-            phones.append("sp")
 
     phone_text = "{" + " ".join(phones) + "}"
     print("Raw Text Sequence: {}".format(text))

@@ -12,7 +12,12 @@ import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from text.vietnamese import phonemize_text, text_to_words
+from text.vietnamese import (
+    PAUSE_WORD,
+    normalize_text,
+    text_to_training_units,
+    word_to_phoneme_tokens,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -103,7 +108,7 @@ def run_mfa_g2p(word_tuple, g2p_model_path, mfa_executable):
 
 
 def vietnamese_tokens(text: str) -> List[str]:
-    words = text_to_words(text)
+    words = [unit for unit in text_to_training_units(text) if unit != PAUSE_WORD]
     lexicon = read_lexicon(DEFAULT_LEXICON_PATH)
 
     unknown_words = []
@@ -121,18 +126,20 @@ def vietnamese_tokens(text: str) -> List[str]:
         )
 
     tokens: List[str] = []
-    for index, word in enumerate(words):
+    for word in text_to_training_units(text):
+        if word == PAUSE_WORD:
+            tokens.append("sp")
+            continue
+
         lookup = word.lower()
         if lookup in lexicon:
             word_tokens = lexicon[lookup]
         elif lookup in g2p_pronunciations:
             word_tokens = g2p_pronunciations[lookup]
         else:
-            word_tokens = phonemize_text(word)
+            word_tokens = word_to_phoneme_tokens(normalize_text(word))
 
         tokens.extend(word_tokens)
-        if index != len(words) - 1:
-            tokens.append("sp")
 
     return tokens or ["spn"]
 
