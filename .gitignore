@@ -114,6 +114,7 @@ montreal-forced-aligner/
 raw_data/
 corpus/
 preprocessed_data/
+mfa_corpus/
 output/
 *.npy
 TextGrid/
