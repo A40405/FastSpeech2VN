@@ -20,7 +20,7 @@ Project-specific documentation for the clean Vietnamese pipeline:
 - `docs/en/infore1-vietnamese-demo.md`
 - `docs/vn/infore1-cai-dat.md`
 - `docs/vn/infore1-train-local.md`
-- `docs/vn/alignment-mfa-tieng-viet.md`
+- `docs/vn/mfa-tieng-viet-can-chinh.md`
 - `docs/vn/thay-doi-pipeline-tieng-viet.md`
 - `docs/vn/dich-vu-ngrok.md`
 - `docs/vn/infore1-demo-tieng-viet.md`

@@ -22,6 +22,7 @@ Script wrapper này đã chạy luôn:
 - sinh MFA assets
 - train G2P model
 - chạy MFA alignment
+- validate alignment và phoneset
 - preprocess FastSpeech2
 
 Tài liệu chi tiết:
@@ -58,6 +59,10 @@ Infer:
 
 Clean repo này chủ yếu được chuẩn bị cho Kaggle và chia sẻ có thể tái lập.
 Nếu GPU local yếu hơn Kaggle T4, bạn có thể cần giảm `batch_size` trong `config/InfoRe1_25hours/train.yaml`.
+Sau bước preprocess, bạn nên xem thêm:
+
+- `preprocessed_data/InfoRe1/alignment_validation_report.json`
+- `mfa_assets/phoneset_report.json`
 
 ## 7) Lỗi thường gặp
 

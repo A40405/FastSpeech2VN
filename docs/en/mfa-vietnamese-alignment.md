@@ -14,7 +14,9 @@ The recommended path is the full pipeline, not a bootstrap approximation.
 - `mfa_assets/infore1_vi.wordlist`
 - `mfa_assets/infore1_vi_symbol_map.tsv`
 - `mfa_assets/infore1_vi_g2p_model.zip`
+- `mfa_assets/phoneset_report.json`
 - `preprocessed_data/InfoRe1/TextGrid`
+- `preprocessed_data/InfoRe1/alignment_validation_report.json`
 
 ## Why this is still not a full ViMFA clone
 
@@ -68,6 +70,10 @@ That wrapper delegates to `scripts/prepare_infore1_mfa.ps1`, which runs the full
 If you want to run the alignment stage manually, the two key commands are:
 
 ```powershell
+python .\scripts\build_infore1_mfa_assets.py --raw-root .\raw_data\InfoRe1 --corpus-root .\mfa_corpus\InfoRe1 --lexicon-path .\mfa_assets\infore1_vi.dict --g2p-train-path .\mfa_assets\infore1_vi_g2p.tsv --wordlist-path .\mfa_assets\infore1_vi.wordlist --symbol-map-path .\mfa_assets\infore1_vi_symbol_map.tsv
+```
+
+```powershell
 python .\scripts\train_vietnamese_g2p.py --mfa mfa --dictionary-path .\mfa_assets\infore1_vi.dict --output-model-path .\mfa_assets\infore1_vi_g2p_model.zip --overwrite
 ```
 
@@ -75,8 +81,22 @@ python .\scripts\train_vietnamese_g2p.py --mfa mfa --dictionary-path .\mfa_asset
 python .\scripts\run_mfa_train_alignment.py --mfa mfa --corpus-root .\mfa_corpus\InfoRe1 --lexicon-path .\mfa_assets\infore1_vi.dict --output-root .\preprocessed_data\InfoRe1\TextGrid --model-path .\mfa_assets\infore1_vi_acoustic_model.zip --num-jobs 4 --single-speaker --overwrite
 ```
 
+Before preprocessing, also run:
+
+```powershell
+python .\scripts\validate_alignment.py --config .\config\InfoRe1_25hours\preprocess.yaml
+python .\scripts\check_phoneset.py --config .\config\InfoRe1_25hours\preprocess.yaml
+```
+
+The two reports worth checking are:
+
+- `preprocessed_data/InfoRe1/alignment_validation_report.json`
+- `mfa_assets/phoneset_report.json`
+
 ## Notes for quality
 
 - Better alignment quality usually means better duration targets for FastSpeech2.
+- The repo now repairs recoverable zero-duration alignments during preprocess, but every detected and repaired issue is still logged into the JSON reports.
+- When rebuilding `dict` and `g2p.tsv`, the repo injects a small set of synthetic coverage seeds for rare frontend-only IPA symbols so the declared phoneset stays aligned end to end.
 - If `TextGrid` already exists, you can skip rerunning the MFA stage.
 - The repo is designed so the clean Git version stays shareable and reproducible.

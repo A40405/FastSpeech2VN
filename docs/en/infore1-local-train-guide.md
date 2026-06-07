@@ -22,6 +22,7 @@ This wrapper script already runs:
 - MFA asset generation
 - G2P model training
 - MFA alignment
+- alignment and phoneset validation
 - FastSpeech2 preprocessing
 
 Detailed guide:
@@ -58,6 +59,10 @@ Infer:
 
 The clean repo is mainly prepared for Kaggle and reproducible sharing.
 If your local GPU is weaker than Kaggle T4, you may need to reduce `batch_size` in `config/InfoRe1_25hours/train.yaml`.
+After preprocessing, it is worth checking:
+
+- `preprocessed_data/InfoRe1/alignment_validation_report.json`
+- `mfa_assets/phoneset_report.json`
 
 ## 7) Common issues
 
