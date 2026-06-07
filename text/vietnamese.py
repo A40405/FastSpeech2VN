@@ -323,6 +323,19 @@ FASTSPEECH_SYMBOL_MAP = {
     token: f"{FASTSPEECH_SYMBOL_PREFIX}{token}" for token in VIETNAMESE_IPA_TOKENS
 }
 
+# Synthetic lexicon/G2P seeds keep rarely used frontend symbols reachable in MFA assets
+# without polluting real transcript text or corpus-derived word lists.
+MFA_PHONE_COVERAGE_SEEDS = {
+    "__cov_phone_c__": ["c"],
+    "__cov_phone_d__": ["d"],
+    "__cov_phone_kh__": ["kʰ"],
+    "__cov_phone_sil__": ["sil"],
+    "__cov_phone_ae__": ["æ"],
+    "__cov_phone_eth__": ["ð"],
+    "__cov_phone_ngm__": ["ŋ͡m"],
+    "__cov_phone_opena__": ["ɑ"],
+}
+
 
 def normalize_text(text):
     return unicodedata.normalize("NFC", text.strip().lower())

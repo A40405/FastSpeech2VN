@@ -10,6 +10,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from text.vietnamese import (
+    MFA_PHONE_COVERAGE_SEEDS,
     PAUSE_WORD,
     iter_symbol_mapping_rows,
     normalize_text,
@@ -58,6 +59,21 @@ def write_symbol_map(symbol_map_path):
         writer.writerow(["ipa_phone", "fastspeech_symbol", "category"])
         for row in iter_symbol_mapping_rows():
             writer.writerow(row)
+
+
+def build_augmented_lexicon(corpus_lexicon):
+    augmented = dict(corpus_lexicon)
+    covered_phones = {phone for phones in augmented.values() for phone in phones}
+    added_seeds = {}
+
+    for seed_word, phones in MFA_PHONE_COVERAGE_SEEDS.items():
+        if not any(phone not in covered_phones for phone in phones):
+            continue
+        augmented[seed_word] = list(phones)
+        added_seeds[seed_word] = list(phones)
+        covered_phones.update(phones)
+
+    return augmented, added_seeds
 
 
 def build_assets(
@@ -109,9 +125,11 @@ def build_assets(
                     phones = word_to_phoneme_tokens(normalized_word)
                     lexicon[normalized_word] = phones if phones else ["spn"]
 
-    write_lexicon(lexicon, lexicon_path)
+    augmented_lexicon, added_seed_lexicon = build_augmented_lexicon(lexicon)
+
+    write_lexicon(augmented_lexicon, lexicon_path)
     write_wordlist(lexicon, wordlist_path)
-    write_g2p_training_data(lexicon, g2p_train_path)
+    write_g2p_training_data(augmented_lexicon, g2p_train_path)
     write_symbol_map(symbol_map_path)
 
     print(f"Prepared MFA corpus: {corpus_root}")
@@ -121,6 +139,7 @@ def build_assets(
     print(f"Prepared symbol map: {symbol_map_path}")
     print(f"Utterances: {utterance_count}")
     print(f"Vocabulary size: {len(lexicon)}")
+    print(f"Coverage seeds added: {len(added_seed_lexicon)}")
 
 
 if __name__ == "__main__":

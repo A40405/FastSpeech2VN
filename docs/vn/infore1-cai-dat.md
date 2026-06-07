@@ -38,6 +38,10 @@ Repo hiện dùng phone inventory tiếng Việt kiểu IPA thay cho bộ nhãn 
 
 Repo này vẫn chưa phải bản sao y hệt `ViMFA`, nhưng đã có đủ các khối thực dụng quan trọng: dữ liệu từ điển phát âm, dữ liệu train G2P, word list và symbol mapping.
 
+Khi rebuild `mfa_assets/infore1_vi.dict` và `mfa_assets/infore1_vi_g2p.tsv`, repo cũng tự chèn
+một nhóm nhỏ seed coverage tổng hợp cho các IPA symbol hiếm chỉ có trong frontend. Việc này giúp
+phoneset giữa frontend, dictionary và G2P đồng bộ hơn mà không làm bẩn transcript thật hay word list suy diễn.
+
 ## Pipeline local đầy đủ
 
 Cài package:

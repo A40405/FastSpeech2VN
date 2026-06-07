@@ -51,6 +51,10 @@ In addition to `.phones` generation, the repo now exports:
 - MFA-style G2P training data: `mfa_assets/infore1_vi_g2p.tsv`
 - an IPA-to-FastSpeech2 symbol map: `mfa_assets/infore1_vi_symbol_map.tsv`
 
+When these MFA assets are rebuilt, the repo also injects a few synthetic coverage seeds for
+rare frontend-only IPA symbols so `dict` and `g2p.tsv` stay aligned with the declared Vietnamese
+phone inventory without polluting real transcript text.
+
 The runtime inference order is lexicon first, trained G2P for OOV words second, and rule-based phonemization only as the final fallback.
 
 This makes the pipeline closer to ViMFA-style organization, while still keeping FastSpeech2 and the repo's own Vietnamese frontend self-contained.
