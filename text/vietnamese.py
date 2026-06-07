@@ -302,6 +302,8 @@ VOWEL_IPA_TOKENS = sorted(set(VOWEL_MAP.values()))
 CODA_IPA_TOKENS = sorted({token for _, token in CODA_MAP})
 TONE_IPA_TOKENS = [TONE_NAMES[idx] for idx in sorted(TONE_NAMES)]
 SILENCE_IPA_TOKENS = ["sp", "spn", "sil"]
+DEFAULT_PAUSE_PHONE = "sp"
+DEFAULT_ALIGNMENT_SILENCE_LABELS = ["", *SILENCE_IPA_TOKENS]
 
 
 TOKEN_CATEGORY_MAP = {}

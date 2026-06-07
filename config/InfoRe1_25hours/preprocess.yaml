@@ -13,6 +13,12 @@ preprocessing:
   text:
     text_cleaners: ["basic_cleaners"]
     language: "vi"
+  alignment:
+    silence_labels: ["", "sil", "sp", "spn"]
+    pause_phone: "sp"
+    repair_zero_durations: true
+    drop_unrecoverable_zero_durations: true
+    collapse_consecutive_pauses: true
   audio:
     sampling_rate: 22050
     max_wav_value: 32768.0
@@ -25,7 +31,7 @@ preprocessing:
     mel_fmin: 0
     mel_fmax: 8000
   pitch:
-    feature: "phoneme_level"
+    feature: "frame_level"
     normalization: True
   energy:
     feature: "phoneme_level"

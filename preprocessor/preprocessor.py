@@ -11,6 +11,12 @@ from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
 import audio as Audio
+from preprocessor.alignment_utils import (
+    build_alignment_settings,
+    make_interval,
+    sanitize_alignment_intervals,
+)
+from utils.io import atomic_write_json
 
 
 class Preprocessor:
@@ -21,6 +27,7 @@ class Preprocessor:
         self.val_size = config["preprocessing"]["val_size"]
         self.sampling_rate = config["preprocessing"]["audio"]["sampling_rate"]
         self.hop_length = config["preprocessing"]["stft"]["hop_length"]
+        self.alignment_settings = build_alignment_settings(config)
 
         assert config["preprocessing"]["pitch"]["feature"] in [
             "phoneme_level",
@@ -61,6 +68,21 @@ class Preprocessor:
         n_frames = 0
         pitch_scaler = StandardScaler()
         energy_scaler = StandardScaler()
+        alignment_report = {
+            "summary": {
+                "samples_seen": 0,
+                "samples_processed": 0,
+                "samples_dropped": 0,
+            },
+            "detected_counts": {},
+            "repaired_counts": {},
+            "dropped_counts": {},
+            "drop_reasons": {},
+            "examples": {
+                "dropped_samples": [],
+                "detected_issues": [],
+            },
+        }
 
         # Compute pitch, energy, duration, and mel-spectrogram
         speakers = {}
@@ -75,12 +97,28 @@ class Preprocessor:
                     self.out_dir, "TextGrid", speaker, "{}.TextGrid".format(basename)
                 )
                 if os.path.exists(tg_path):
-                    ret = self.process_utterance(speaker, basename)
-                    if ret is None:
+                    alignment_report["summary"]["samples_seen"] += 1
+                    result = self.process_utterance(speaker, basename)
+                    self.update_alignment_report(
+                        alignment_report, speaker, basename, result["report"]
+                    )
+                    if result["status"] != "ok":
                         continue
-                    else:
-                        info, pitch, energy, n = ret
+                    info = result["info"]
+                    pitch = result["pitch"]
+                    energy = result["energy"]
+                    n = result["n_frames"]
                     out.append(info)
+                    alignment_report["summary"]["samples_processed"] += 1
+                else:
+                    alignment_report["summary"]["samples_seen"] += 1
+                    self.update_alignment_report(
+                        alignment_report,
+                        speaker,
+                        basename,
+                        {"drop_reason": "missing_textgrid"},
+                    )
+                    continue
 
                 if len(pitch) > 0:
                     pitch_scaler.partial_fit(pitch.reshape((-1, 1)))
@@ -132,6 +170,10 @@ class Preprocessor:
                 ],
             }
             f.write(json.dumps(stats))
+        atomic_write_json(
+            alignment_report,
+            os.path.join(self.out_dir, "alignment_report.json"),
+        )
 
         print(
             "Total time: {} hours".format(
@@ -160,13 +202,29 @@ class Preprocessor:
         )
 
         # Get alignments
-        textgrid = tgt.io.read_textgrid(tg_path)
-        phone, duration, start, end = self.get_alignment(
-            textgrid.get_tier_by_name("phones")
-        )
+        try:
+            textgrid = tgt.io.read_textgrid(tg_path)
+            phone, duration, start, end, alignment_info = self.get_alignment(
+                textgrid.get_tier_by_name("phones")
+            )
+        except Exception as exc:
+            return {
+                "status": "dropped",
+                "report": {
+                    "drop_reason": "alignment_parse_error",
+                    "error_message": str(exc),
+                },
+            }
+
         text = "{" + " ".join(phone) + "}"
         if start >= end:
-            return None
+            return {
+                "status": "dropped",
+                "report": {
+                    **alignment_info,
+                    "drop_reason": "invalid_trimmed_range",
+                },
+            }
 
         # Read and trim wav files
         wav, _ = librosa.load(wav_path, sr=self.sampling_rate)
@@ -188,7 +246,13 @@ class Preprocessor:
 
         pitch = pitch[: sum(duration)]
         if np.sum(pitch != 0) <= 1:
-            return None
+            return {
+                "status": "dropped",
+                "report": {
+                    **alignment_info,
+                    "drop_reason": "insufficient_voiced_pitch",
+                },
+            }
 
         # Compute mel-scale spectrogram and energy
         mel_spectrogram, energy = Audio.tools.get_mel_from_wav(wav, self.STFT)
@@ -247,52 +311,72 @@ class Preprocessor:
             mel_spectrogram.T.astype(np.float32),
         )
 
-        return (
-            "|".join([basename, speaker, text, raw_text]),
-            self.remove_outlier(pitch),
-            self.remove_outlier(energy),
-            mel_spectrogram.shape[1],
-        )
+        return {
+            "status": "ok",
+            "info": "|".join([basename, speaker, text, raw_text]),
+            "pitch": self.remove_outlier(pitch),
+            "energy": self.remove_outlier(energy),
+            "n_frames": mel_spectrogram.shape[1],
+            "report": alignment_info,
+        }
 
     def get_alignment(self, tier):
-        sil_phones = ["sil", "sp", "spn"]
-
-        phones = []
-        durations = []
-        start_time = 0
-        end_time = 0
-        end_idx = 0
-        for t in tier._objects:
-            s, e, p = t.start_time, t.end_time, t.text
-
-            # Trim leading silences
-            if phones == []:
-                if p in sil_phones:
-                    continue
-                else:
-                    start_time = s
-
-            if p not in sil_phones:
-                # For ordinary phones
-                phones.append(p)
-                end_time = e
-                end_idx = len(phones)
-            else:
-                # For silent phones
-                phones.append(p)
-
-            durations.append(
-                int(
-                    np.round(e * self.sampling_rate / self.hop_length)
-                    - np.round(s * self.sampling_rate / self.hop_length)
-                )
+        intervals = []
+        for interval in tier._objects:
+            start = float(interval.start_time)
+            end = float(interval.end_time)
+            duration = int(
+                np.round(end * self.sampling_rate / self.hop_length)
+                - np.round(start * self.sampling_rate / self.hop_length)
+            )
+            intervals.append(
+                make_interval(start, end, interval.text, duration)
             )
 
-        # Trim tailing silences
-        phones = phones[:end_idx]
-        durations = durations[:end_idx]
+        alignment_result = sanitize_alignment_intervals(intervals, self.alignment_settings)
+        sanitized_intervals = alignment_result["intervals"]
+        if not alignment_result["valid"]:
+            return [], [], 0, 0, alignment_result
 
-        return phones, durations, start_time, end_time
+        phones = [entry["phone"] for entry in sanitized_intervals]
+        durations = [entry["duration"] for entry in sanitized_intervals]
+        start_time = sanitized_intervals[0]["start"]
+        end_time = sanitized_intervals[-1]["end"]
+
+        return phones, durations, start_time, end_time, alignment_result
+
+    def update_alignment_report(self, report, speaker, basename, sample_report):
+        drop_reason = sample_report.get("drop_reason")
+        if drop_reason:
+            report["summary"]["samples_dropped"] += 1
+            report["drop_reasons"][drop_reason] = (
+                report["drop_reasons"].get(drop_reason, 0) + 1
+            )
+            dropped_examples = report["examples"]["dropped_samples"]
+            if len(dropped_examples) < 20:
+                dropped_examples.append(
+                    {
+                        "speaker": speaker,
+                        "basename": basename,
+                        "reason": drop_reason,
+                        "fatal_errors": sample_report.get("fatal_errors", []),
+                        "error_message": sample_report.get("error_message"),
+                    }
+                )
+
+        for group_name in ("detected_counts", "repaired_counts", "dropped_counts"):
+            group_counts = sample_report.get(group_name, {})
+            for key, value in group_counts.items():
+                report[group_name][key] = report[group_name].get(key, 0) + int(value)
+
+        if sample_report.get("examples") and len(report["examples"]["detected_issues"]) < 20:
+            report["examples"]["detected_issues"].append(
+                {
+                    "speaker": speaker,
+                    "basename": basename,
+                    "examples": sample_report["examples"],
+                }
+            )
 
     def remove_outlier(self, values):
         values = np.array(values)

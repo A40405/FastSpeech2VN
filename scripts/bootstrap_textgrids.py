@@ -4,13 +4,15 @@ from pathlib import Path
 import librosa
 import tgt
 
+from text.vietnamese import DEFAULT_PAUSE_PHONE
+
 
 def build_textgrid(tokens, total_duration):
     textgrid = tgt.TextGrid()
     tier = tgt.IntervalTier(name="phones")
 
     if not tokens:
-        tier.add_interval(tgt.Interval(0.0, total_duration, "sp"))
+        tier.add_interval(tgt.Interval(0.0, total_duration, DEFAULT_PAUSE_PHONE))
     else:
         step = total_duration / len(tokens)
         current = 0.0
