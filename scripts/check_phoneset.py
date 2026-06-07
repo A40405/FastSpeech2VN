@@ -2,9 +2,15 @@ import argparse
 import csv
 import json
 import os
+import sys
 import zipfile
+from pathlib import Path
 
 import yaml
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from text.vietnamese import FASTSPEECH_SYMBOL_MAP, SILENCE_IPA_TOKENS, VIETNAMESE_IPA_TOKENS
 from utils.io import atomic_write_json, utc_timestamp
