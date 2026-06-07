@@ -10,6 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from utils.model import get_model, get_vocoder, get_param_num
+from utils.io import atomic_torch_save, atomic_write_json, utc_timestamp
 from utils.tools import to_device, log, synth_one_sample
 from model import FastSpeech2Loss
 from dataset import Dataset
@@ -41,7 +42,34 @@ def load_best_checkpoint_records(ckpt_dir):
     return records, metadata_path
 
 
-def save_best_checkpoint(ckpt_dir, step, score, state, keep):
+def save_latest_checkpoint(ckpt_dir, step, epoch, score, state):
+    os.makedirs(ckpt_dir, exist_ok=True)
+    latest_filename = "latest.pth.tar"
+    latest_path = os.path.join(ckpt_dir, latest_filename)
+    latest_metadata_path = os.path.join(ckpt_dir, "latest_checkpoint.json")
+
+    state = dict(state)
+    state["validation_total_loss"] = float(score)
+    state["val_loss"] = float(score)
+    state["step"] = step
+    state["epoch"] = epoch
+    state["timestamp"] = utc_timestamp()
+    atomic_torch_save(state, latest_path)
+
+    latest_record = {
+        "filename": latest_filename,
+        "step": step,
+        "epoch": epoch,
+        "val_loss": float(score),
+        "validation_total_loss": float(score),
+        "timestamp": state["timestamp"],
+    }
+    atomic_write_json(latest_record, latest_metadata_path)
+
+    return latest_record
+
+
+def save_best_checkpoint(ckpt_dir, step, epoch, score, state, keep):
     os.makedirs(ckpt_dir, exist_ok=True)
     records, metadata_path = load_best_checkpoint_records(ckpt_dir)
 
@@ -49,11 +77,21 @@ def save_best_checkpoint(ckpt_dir, step, score, state, keep):
     ckpt_path = os.path.join(ckpt_dir, filename)
     state = dict(state)
     state["validation_total_loss"] = float(score)
+    state["val_loss"] = float(score)
     state["step"] = step
-    torch.save(state, ckpt_path)
+    state["epoch"] = epoch
+    state["timestamp"] = utc_timestamp()
+    atomic_torch_save(state, ckpt_path)
 
     records.append(
-        {"filename": filename, "step": step, "validation_total_loss": float(score)}
+        {
+            "filename": filename,
+            "step": step,
+            "epoch": epoch,
+            "val_loss": float(score),
+            "validation_total_loss": float(score),
+            "timestamp": state["timestamp"],
+        }
     )
     records.sort(key=lambda record: (record["validation_total_loss"], record["step"]))
 
@@ -66,8 +104,7 @@ def save_best_checkpoint(ckpt_dir, step, score, state, keep):
             os.remove(old_path)
             removed.append(record["filename"])
 
-    with open(metadata_path, "w", encoding="utf-8") as f:
-        json.dump(kept, f, indent=2)
+    atomic_write_json(kept, metadata_path)
 
     return filename in kept_names, removed
 
@@ -256,9 +293,20 @@ def main(args, configs):
                             if isinstance(model, nn.DataParallel)
                             else model.state_dict()
                         )
+                        latest_record = save_latest_checkpoint(
+                            train_config["path"]["ckpt_path"],
+                            step,
+                            epoch,
+                            latest_val_total_loss,
+                            {
+                                "model": model_state,
+                                "optimizer": optimizer._optimizer.state_dict(),
+                            },
+                        )
                         kept, removed = save_best_checkpoint(
                             train_config["path"]["ckpt_path"],
                             step,
+                            epoch,
                             latest_val_total_loss,
                             {
                                 "model": model_state,
@@ -284,6 +332,14 @@ def main(args, configs):
                                     ", ".join(removed)
                                 )
                             )
+                        outer_bar.write(
+                            "Updated latest checkpoint: {} (step {}, epoch {}, validation total loss {:.4f})".format(
+                                latest_record["filename"],
+                                latest_record["step"],
+                                latest_record["epoch"],
+                                latest_record["val_loss"],
+                            )
+                        )
 
                 if step == total_step:
                     quit()
