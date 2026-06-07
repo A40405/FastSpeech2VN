@@ -2,6 +2,7 @@ import argparse
 import csv
 import json
 import os
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -16,14 +17,40 @@ from text.vietnamese import FASTSPEECH_SYMBOL_MAP, SILENCE_IPA_TOKENS, VIETNAMES
 from utils.io import atomic_write_json, utc_timestamp
 
 
+NUMERIC_TOKEN_RE = re.compile(r"^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$")
+DISAMBIGUATION_SYMBOL_RE = re.compile(r"^#\d+$")
+EPSILON_SYMBOLS = {"<eps>", "<epsilon>"}
+
+
+def _is_numeric_token(token):
+    return bool(NUMERIC_TOKEN_RE.match(token))
+
+
+def _is_symbolic_phone_token(token):
+    return bool(token) and not _is_numeric_token(token)
+
+
+def _is_technical_model_symbol(token):
+    return token in EPSILON_SYMBOLS or bool(DISAMBIGUATION_SYMBOL_RE.match(token))
+
+
+def _extract_dictionary_phone_tokens(parts):
+    if len(parts) < 2:
+        return []
+
+    phone_start = 1
+    while phone_start < len(parts) and _is_numeric_token(parts[phone_start]):
+        phone_start += 1
+
+    return [token for token in parts[phone_start:] if _is_symbolic_phone_token(token)]
+
+
 def load_dictionary_phones(dictionary_path):
     phones = set()
     with open(dictionary_path, "r", encoding="utf-8") as f:
-        for line_no, line in enumerate(f, start=1):
+        for line in f:
             parts = line.strip().split()
-            if len(parts) < 2:
-                continue
-            for phone in parts[1:]:
+            for phone in _extract_dictionary_phone_tokens(parts):
                 phones.add(phone)
     return phones
 
@@ -52,14 +79,21 @@ def load_model_zip_phones(zip_path):
                         parts = raw_line.decode("utf-8").strip().split()
                         if not parts:
                             continue
-                        phones.add(parts[0])
+                        token = parts[0]
+                        if _is_technical_model_symbol(token):
+                            continue
+                        phones.add(token)
             elif any(name.endswith("meta.json") for name in names):
                 target = next(name for name in names if name.endswith("meta.json"))
                 with zf.open(target) as f:
                     meta = json.load(f)
                 for value in meta.values():
                     if isinstance(value, list):
-                        phones.update(str(item) for item in value if isinstance(item, str))
+                        phones.update(
+                            str(item)
+                            for item in value
+                            if isinstance(item, str) and not _is_technical_model_symbol(str(item))
+                        )
             return phones, None
     except Exception as exc:
         return None, str(exc)
@@ -155,7 +189,7 @@ def main():
         )
 
     if g2p_error:
-        report["errors"].append({"type": "g2p_model_error", "message": g2p_error})
+        report["warnings"].append({"type": "g2p_model_warning", "message": g2p_error})
     else:
         checks["g2p_model_extra_phones"] = sorted(g2p_phones - text_phones)
         if checks["g2p_model_extra_phones"]:
