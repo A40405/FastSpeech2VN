@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from functools import lru_cache
 from pathlib import Path
@@ -25,6 +26,12 @@ from text.vietnamese import (
 )
 from utils.model import get_model, get_vocoder
 from utils.tools import synth_samples, to_device
+
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -63,27 +70,37 @@ def run_mfa_g2p(word_tuple, g2p_model_path, mfa_executable):
         return {}
 
     resolved_mfa = resolve_executable(mfa_executable)
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpdir = Path(tmpdir)
-        input_path = tmpdir / "oovs.txt"
-        output_path = tmpdir / "oovs.dict"
-        input_path.write_text("\n".join(input_words) + "\n", encoding="utf-8")
+    temp_root = Path.cwd() / ".tmp" / "mfa_g2p"
+    temp_root.mkdir(parents=True, exist_ok=True)
 
-        command = [
-            resolved_mfa,
-            "g2p",
-            str(input_path),
-            str(g2p_model),
-            str(output_path),
-            "--clean",
-            "--overwrite",
-        ]
-        print("Running G2P:", " ".join(command))
-        completed = subprocess.run(command, env=os.environ.copy())
-        if completed.returncode != 0 or not output_path.exists():
-            return {}
+    try:
+        with tempfile.TemporaryDirectory(dir=temp_root) as tmpdir:
+            tmpdir = Path(tmpdir)
+            input_path = tmpdir / "oovs.txt"
+            output_path = tmpdir / "oovs.dict"
+            input_path.write_text("\n".join(input_words) + "\n", encoding="utf-8")
 
-        return read_lexicon(output_path)
+            command = [
+                resolved_mfa,
+                "g2p",
+                str(input_path),
+                str(g2p_model),
+                str(output_path),
+                "--clean",
+                "--overwrite",
+            ]
+            print("Running G2P:", " ".join(command))
+            completed = subprocess.run(command, env=os.environ.copy())
+            if completed.returncode != 0 or not output_path.exists():
+                return {}
+
+            return read_lexicon(output_path)
+    except OSError as exc:
+        print(
+            "Canh bao: khong the chay MFA G2P tam thoi, se fallback sang "
+            f"phonemizer rule-based. Chi tiet: {exc}"
+        )
+        return {}
 
 
 def preprocess_english(text, preprocess_config):
@@ -197,6 +214,7 @@ def preprocess_vietnamese(text, preprocess_config):
 def synthesize(model, step, configs, vocoder, batchs, control_values):
     preprocess_config, model_config, train_config = configs
     pitch_control, energy_control, duration_control = control_values
+    os.makedirs(train_config["path"]["result_path"], exist_ok=True)
 
     for batch in batchs:
         batch = to_device(batch, device)
@@ -284,10 +302,17 @@ if __name__ == "__main__":
         assert args.source is None and args.text is not None
 
     preprocess_config = yaml.load(
-        open(args.preprocess_config, "r"), Loader=yaml.FullLoader
+        Path(args.preprocess_config).read_text(encoding="utf-8"),
+        Loader=yaml.FullLoader,
     )
-    model_config = yaml.load(open(args.model_config, "r"), Loader=yaml.FullLoader)
-    train_config = yaml.load(open(args.train_config, "r"), Loader=yaml.FullLoader)
+    model_config = yaml.load(
+        Path(args.model_config).read_text(encoding="utf-8"),
+        Loader=yaml.FullLoader,
+    )
+    train_config = yaml.load(
+        Path(args.train_config).read_text(encoding="utf-8"),
+        Loader=yaml.FullLoader,
+    )
     configs = (preprocess_config, model_config, train_config)
 
     model = get_model(args, configs, device, train=False)
