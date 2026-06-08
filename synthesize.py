@@ -237,7 +237,7 @@ def synthesize(model, step, configs, vocoder, batchs, control_values):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--restore_step", type=int, required=True)
+    parser.add_argument("--restore_step", type=str, required=True)
     parser.add_argument(
         "--mode",
         type=str,
@@ -295,6 +295,13 @@ if __name__ == "__main__":
         help="control the speed of the whole utterance, larger value for slower speaking rate",
     )
     args = parser.parse_args()
+    if args.restore_step.lower() != "latest":
+        try:
+            args.restore_step = int(args.restore_step)
+        except ValueError as exc:
+            raise SystemExit(
+                "--restore_step chi nhan so nguyen hoac gia tri 'latest'."
+            ) from exc
 
     if args.mode == "batch":
         assert args.source is not None and args.text is None

@@ -2,6 +2,7 @@ import os
 import json
 import zipfile
 import sys
+from pathlib import Path
 
 import torch
 import numpy as np
@@ -31,21 +32,76 @@ def load_torch_checkpoint(path, map_location=None):
     return torch.load(path, map_location=map_location, weights_only=False)
 
 
+def _numeric_checkpoint_candidates(ckpt_dir):
+    return sorted(
+        (
+            path
+            for path in ckpt_dir.glob("*.pth.tar")
+            if path.name.split(".")[0].isdigit()
+        ),
+        key=lambda path: int(path.name.split(".")[0]),
+    )
+
+
+def resolve_restore_checkpoint(ckpt_root, restore_step):
+    ckpt_dir = Path(ckpt_root)
+
+    if restore_step in (None, "", 0):
+        candidates = _numeric_checkpoint_candidates(ckpt_dir)
+        if not candidates:
+            raise FileNotFoundError(f"Khong tim thay checkpoint nao trong: {ckpt_dir}")
+        resolved_path = candidates[-1]
+        return resolved_path, int(resolved_path.name.split(".")[0])
+
+    if isinstance(restore_step, str) and restore_step.lower() == "latest":
+        latest_path = ckpt_dir / "latest.pth.tar"
+        if latest_path.exists():
+            return latest_path, None
+
+        latest_meta_path = ckpt_dir / "latest_checkpoint.json"
+        if latest_meta_path.exists():
+            latest_meta = json.loads(latest_meta_path.read_text(encoding="utf-8"))
+            meta_step = latest_meta.get("step")
+            if isinstance(meta_step, int):
+                numbered_path = ckpt_dir / f"{meta_step}.pth.tar"
+                if numbered_path.exists():
+                    return numbered_path, meta_step
+
+        candidates = _numeric_checkpoint_candidates(ckpt_dir)
+        if not candidates:
+            raise FileNotFoundError(
+                f"Khong tim thay latest.pth.tar hoac checkpoint so trong: {ckpt_dir}"
+            )
+        resolved_path = candidates[-1]
+        return resolved_path, int(resolved_path.name.split(".")[0])
+
+    resolved_path = ckpt_dir / f"{restore_step}.pth.tar"
+    if not resolved_path.exists():
+        raise FileNotFoundError(f"Khong tim thay checkpoint: {resolved_path}")
+    return resolved_path, int(restore_step)
+
+
 def get_model(args, configs, device, train=False):
     (preprocess_config, model_config, train_config) = configs
 
     model = FastSpeech2(preprocess_config, model_config).to(device)
+    resolved_restore_step = args.restore_step
     if args.restore_step:
-        ckpt_path = os.path.join(
-            train_config["path"]["ckpt_path"],
-            "{}.pth.tar".format(args.restore_step),
+        ckpt_path, inferred_step = resolve_restore_checkpoint(
+            train_config["path"]["ckpt_path"], args.restore_step
         )
         ckpt = load_torch_checkpoint(ckpt_path, map_location=device)
         model.load_state_dict(ckpt["model"])
+        resolved_restore_step = (
+            ckpt.get("step")
+            or ckpt.get("global_step")
+            or inferred_step
+            or args.restore_step
+        )
 
     if train:
         scheduled_optim = ScheduledOptim(
-            model, train_config, model_config, args.restore_step
+            model, train_config, model_config, resolved_restore_step
         )
         if args.restore_step:
             scheduled_optim.load_state_dict(ckpt["optimizer"])
