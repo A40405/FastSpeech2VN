@@ -12,6 +12,7 @@ sys.modules.setdefault(
 )
 
 from preprocessor.alignment_utils import (
+    assess_alignment_quality,
     build_alignment_settings,
     make_interval,
     sanitize_alignment_intervals,
@@ -74,6 +75,45 @@ class AlignmentUtilsTest(unittest.TestCase):
 
         self.assertFalse(result["valid"])
         self.assertIn("overlap", result["fatal_errors"])
+
+    def test_quality_report_drops_sample_with_too_many_one_frame_phones(self):
+        intervals = [
+            make_interval(0.0, 0.1, "m", 20),
+            make_interval(0.1, 0.2, "a", 1),
+            make_interval(0.2, 0.3, "n", 1),
+            make_interval(0.3, 0.4, "˧", 1),
+            make_interval(0.4, 0.5, "t", 1),
+            make_interval(0.5, 0.6, "a", 1),
+        ]
+
+        result = sanitize_alignment_intervals(intervals, self.settings)
+        quality = assess_alignment_quality(result, self.settings)
+
+        self.assertEqual(
+            quality["drop_reason"], "high_one_frame_non_silence_ratio"
+        )
+        self.assertIn(
+            "high_one_frame_non_silence_ratio", quality["quality_issues"]
+        )
+
+    def test_quality_report_drops_sample_with_too_many_zero_repairs(self):
+        intervals = [
+            make_interval(0.0, 0.1, "m", 14),
+            make_interval(0.1, 0.11, "a", 0),
+            make_interval(0.11, 0.12, "n", 0),
+            make_interval(0.12, 0.13, "˧", 0),
+            make_interval(0.13, 0.3, "t", 14),
+        ]
+
+        result = sanitize_alignment_intervals(intervals, self.settings)
+        quality = assess_alignment_quality(result, self.settings)
+
+        self.assertEqual(
+            quality["drop_reason"], "high_zero_duration_repaired_ratio"
+        )
+        self.assertIn(
+            "high_zero_duration_repaired_ratio", quality["quality_issues"]
+        )
 
 
 if __name__ == "__main__":

@@ -32,6 +32,26 @@ def build_alignment_settings(config=None):
         "collapse_consecutive_pauses": alignment_config.get(
             "collapse_consecutive_pauses", True
         ),
+        "quality": {
+            "min_total_duration_frames": alignment_config.get(
+                "min_total_duration_frames", 24
+            ),
+            "max_zero_duration_repaired": alignment_config.get(
+                "max_zero_duration_repaired", 3
+            ),
+            "max_zero_duration_repaired_ratio": alignment_config.get(
+                "max_zero_duration_repaired_ratio", 0.04
+            ),
+            "max_one_frame_non_silence_count": alignment_config.get(
+                "max_one_frame_non_silence_count", 18
+            ),
+            "max_one_frame_non_silence_ratio": alignment_config.get(
+                "max_one_frame_non_silence_ratio", 0.18
+            ),
+            "max_pause_frame_ratio": alignment_config.get(
+                "max_pause_frame_ratio", 0.35
+            ),
+        },
     }
 
 
@@ -235,3 +255,118 @@ def sanitize_alignment_intervals(intervals, settings, allowed_phones=None):
         "valid": len(fatal_errors) == 0,
     }
     return result
+
+
+def summarize_sanitized_alignment(intervals, settings):
+    metrics = {
+        "phone_count": len(intervals),
+        "total_duration_frames": 0,
+        "pause_count": 0,
+        "pause_duration_frames": 0,
+        "one_frame_non_silence_count": 0,
+        "average_frames_per_phone": 0.0,
+        "pause_frame_ratio": 0.0,
+        "one_frame_non_silence_ratio": 0.0,
+    }
+    examples = {}
+
+    if not intervals:
+        return metrics, examples
+
+    total_duration = 0
+    pause_duration = 0
+    one_frame_examples = []
+    for idx, entry in enumerate(intervals):
+        duration = int(entry["duration"])
+        phone = entry["phone"]
+        total_duration += duration
+
+        if is_silence_phone(phone, settings):
+            metrics["pause_count"] += 1
+            pause_duration += duration
+            continue
+
+        if duration == 1:
+            metrics["one_frame_non_silence_count"] += 1
+            if len(one_frame_examples) < 10:
+                one_frame_examples.append(
+                    {
+                        "index": idx,
+                        "phone": phone,
+                        "duration": duration,
+                        "start": float(entry["start"]),
+                        "end": float(entry["end"]),
+                    }
+                )
+
+    metrics["total_duration_frames"] = total_duration
+    metrics["pause_duration_frames"] = pause_duration
+    metrics["average_frames_per_phone"] = total_duration / max(1, len(intervals))
+    metrics["pause_frame_ratio"] = pause_duration / max(1, total_duration)
+    non_silence_count = max(1, len(intervals) - metrics["pause_count"])
+    metrics["one_frame_non_silence_ratio"] = (
+        metrics["one_frame_non_silence_count"] / non_silence_count
+    )
+
+    if one_frame_examples:
+        examples["one_frame_non_silence"] = one_frame_examples
+
+    return metrics, examples
+
+
+def assess_alignment_quality(alignment_result, settings):
+    intervals = alignment_result.get("intervals", [])
+    quality_settings = settings.get("quality", {})
+    metrics, examples = summarize_sanitized_alignment(intervals, settings)
+
+    quality_issues = []
+    detected_counts = Counter()
+    drop_reason = None
+
+    min_total_duration_frames = quality_settings.get("min_total_duration_frames", 0)
+    if metrics["total_duration_frames"] < min_total_duration_frames:
+        detected_counts["too_short_frames"] += 1
+        quality_issues.append("too_short_frames")
+        drop_reason = drop_reason or "too_short_frames"
+
+    repaired_zero_count = alignment_result.get("repaired_counts", {}).get(
+        "zero_duration_repaired", 0
+    )
+    phone_count = max(1, metrics["phone_count"])
+    repaired_zero_ratio = repaired_zero_count / phone_count
+    if repaired_zero_count > quality_settings.get("max_zero_duration_repaired", 999999):
+        detected_counts["excessive_zero_duration_repaired"] += repaired_zero_count
+        quality_issues.append("excessive_zero_duration_repaired")
+        drop_reason = drop_reason or "excessive_zero_duration_repaired"
+    if repaired_zero_ratio > quality_settings.get("max_zero_duration_repaired_ratio", 1.0):
+        detected_counts["high_zero_duration_repaired_ratio"] += 1
+        quality_issues.append("high_zero_duration_repaired_ratio")
+        drop_reason = drop_reason or "high_zero_duration_repaired_ratio"
+
+    if metrics["one_frame_non_silence_count"] > quality_settings.get(
+        "max_one_frame_non_silence_count", 999999
+    ):
+        detected_counts["excessive_one_frame_non_silence"] += metrics[
+            "one_frame_non_silence_count"
+        ]
+        quality_issues.append("excessive_one_frame_non_silence")
+        drop_reason = drop_reason or "excessive_one_frame_non_silence"
+    if metrics["one_frame_non_silence_ratio"] > quality_settings.get(
+        "max_one_frame_non_silence_ratio", 1.0
+    ):
+        detected_counts["high_one_frame_non_silence_ratio"] += 1
+        quality_issues.append("high_one_frame_non_silence_ratio")
+        drop_reason = drop_reason or "high_one_frame_non_silence_ratio"
+
+    if metrics["pause_frame_ratio"] > quality_settings.get("max_pause_frame_ratio", 1.0):
+        detected_counts["high_pause_frame_ratio"] += 1
+        quality_issues.append("high_pause_frame_ratio")
+        drop_reason = drop_reason or "high_pause_frame_ratio"
+
+    return {
+        "quality_metrics": metrics,
+        "quality_detected_counts": dict(detected_counts),
+        "quality_issues": quality_issues,
+        "quality_examples": examples,
+        "drop_reason": drop_reason,
+    }

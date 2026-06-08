@@ -12,6 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from preprocessor.alignment_utils import (
+    assess_alignment_quality,
     build_alignment_settings,
     make_interval,
     sanitize_alignment_intervals,
@@ -64,10 +65,12 @@ def main():
             "samples_seen": 0,
             "samples_with_fatal_errors": 0,
             "samples_with_detected_issues": 0,
+            "samples_that_would_be_dropped": 0,
         },
         "detected_counts": {},
         "repaired_counts": {},
         "dropped_counts": {},
+        "quality_detected_counts": {},
         "fatal_reasons": {},
         "samples": [],
     }
@@ -94,13 +97,25 @@ def main():
                 intervals.append(make_interval(start, end, interval.text, duration))
 
             result = sanitize_alignment_intervals(intervals, settings)
+            quality_report = assess_alignment_quality(result, settings)
             sample["detected_counts"] = result["detected_counts"]
             sample["repaired_counts"] = result["repaired_counts"]
             sample["dropped_counts"] = result["dropped_counts"]
             sample["fatal_errors"] = result["fatal_errors"]
             sample["examples"] = result["examples"]
+            sample["quality_metrics"] = quality_report["quality_metrics"]
+            sample["quality_detected_counts"] = quality_report[
+                "quality_detected_counts"
+            ]
+            sample["quality_issues"] = quality_report["quality_issues"]
+            sample["drop_reason"] = quality_report["drop_reason"]
 
-            if any(result["detected_counts"].values()):
+            issue_detected = any(
+                value
+                for key, value in result["detected_counts"].items()
+                if key != "intervals"
+            ) or bool(quality_report["quality_issues"])
+            if issue_detected:
                 report["summary"]["samples_with_detected_issues"] += 1
             if result["fatal_errors"]:
                 report["summary"]["samples_with_fatal_errors"] += 1
@@ -108,10 +123,16 @@ def main():
                     report["fatal_reasons"][reason] = (
                         report["fatal_reasons"].get(reason, 0) + 1
                     )
+            if quality_report["drop_reason"]:
+                report["summary"]["samples_that_would_be_dropped"] += 1
 
             for group_name in ("detected_counts", "repaired_counts", "dropped_counts"):
                 for key, value in result[group_name].items():
                     report[group_name][key] = report[group_name].get(key, 0) + int(value)
+            for key, value in quality_report["quality_detected_counts"].items():
+                report["quality_detected_counts"][key] = (
+                    report["quality_detected_counts"].get(key, 0) + int(value)
+                )
         except Exception as exc:
             sample["fatal_errors"] = ["alignment_parse_error"]
             sample["error_message"] = str(exc)

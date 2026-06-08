@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 import audio as Audio
 from preprocessor.alignment_utils import (
+    assess_alignment_quality,
     build_alignment_settings,
     make_interval,
     sanitize_alignment_intervals,
@@ -82,6 +83,7 @@ class Preprocessor:
                 "dropped_samples": [],
                 "detected_issues": [],
             },
+            "quality_detected_counts": {},
         }
 
         # Compute pitch, energy, duration, and mel-spectrogram
@@ -217,6 +219,26 @@ class Preprocessor:
             }
 
         text = "{" + " ".join(phone) + "}"
+        quality_report = assess_alignment_quality(alignment_info, self.alignment_settings)
+        alignment_info["quality_metrics"] = quality_report["quality_metrics"]
+        alignment_info["quality_detected_counts"] = quality_report[
+            "quality_detected_counts"
+        ]
+        if quality_report["quality_examples"]:
+            merged_examples = dict(alignment_info.get("examples", {}))
+            merged_examples.update(quality_report["quality_examples"])
+            alignment_info["examples"] = merged_examples
+        if quality_report["quality_issues"]:
+            alignment_info["quality_issues"] = quality_report["quality_issues"]
+        if quality_report["drop_reason"]:
+            return {
+                "status": "dropped",
+                "report": {
+                    **alignment_info,
+                    "drop_reason": quality_report["drop_reason"],
+                },
+            }
+
         if start >= end:
             return {
                 "status": "dropped",
@@ -369,12 +391,20 @@ class Preprocessor:
             for key, value in group_counts.items():
                 report[group_name][key] = report[group_name].get(key, 0) + int(value)
 
+        quality_counts = sample_report.get("quality_detected_counts", {})
+        for key, value in quality_counts.items():
+            report["quality_detected_counts"][key] = (
+                report["quality_detected_counts"].get(key, 0) + int(value)
+            )
+
         if sample_report.get("examples") and len(report["examples"]["detected_issues"]) < 20:
             report["examples"]["detected_issues"].append(
                 {
                     "speaker": speaker,
                     "basename": basename,
                     "examples": sample_report["examples"],
+                    "quality_issues": sample_report.get("quality_issues", []),
+                    "quality_metrics": sample_report.get("quality_metrics", {}),
                 }
             )
 

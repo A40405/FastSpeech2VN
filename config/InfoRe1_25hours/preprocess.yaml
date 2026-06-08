@@ -19,6 +19,12 @@ preprocessing:
     repair_zero_durations: true
     drop_unrecoverable_zero_durations: true
     collapse_consecutive_pauses: true
+    min_total_duration_frames: 24
+    max_zero_duration_repaired: 3
+    max_zero_duration_repaired_ratio: 0.04
+    max_one_frame_non_silence_count: 18
+    max_one_frame_non_silence_ratio: 0.18
+    max_pause_frame_ratio: 0.35
   audio:
     sampling_rate: 22050
     max_wav_value: 32768.0
