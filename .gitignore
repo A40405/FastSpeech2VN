@@ -118,6 +118,9 @@ mfa_corpus/
 output/
 *.npy
 TextGrid/
+.tmp/
+.tmp-tests/
+FastSpeech2VN/
 hifigan/*.pth.tar
 hifigan/*.pth.tar.zip
 hifigan/*.part
@@ -126,3 +129,5 @@ hifigan/_tmp_pretrained/
 *.pt
 *.pth
 *.parquet
+mfa_assets/*.zip
+mfa_assets/*report.json

@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 from utils.model import get_model, get_vocoder, get_param_num
 from utils.io import atomic_torch_save, atomic_write_json, utc_timestamp
+from utils.splits import get_split_filename
 from utils.tools import to_device, log, synth_one_sample
 from model import FastSpeech2Loss
 from dataset import Dataset
@@ -128,13 +129,27 @@ def main(args, configs):
         print("Visible GPUs:", gpu_names)
     print("Using mixed precision:", use_amp)
 
+    train_split = get_split_filename(train_config, "train")
     dataset = Dataset(
-        "train.txt", preprocess_config, train_config, sort=True, drop_last=True
+        train_split, preprocess_config, train_config, sort=True, drop_last=True
     )
     batch_size = train_config["optimizer"]["batch_size"]
     grad_acc_step = train_config["optimizer"]["grad_acc_step"]
     group_size = dataloader_config.get("group_size", 4)
-    assert batch_size * group_size < len(dataset)
+    if len(dataset) < batch_size:
+        raise ValueError(
+            "Training split '{}' only has {} samples, which is smaller than "
+            "batch_size={}.".format(train_split, len(dataset), batch_size)
+        )
+    max_group_size = max(1, len(dataset) // batch_size)
+    if group_size > max_group_size:
+        print(
+            "Reducing dataloader.group_size from {} to {} so split '{}' with {} "
+            "samples can still train.".format(
+                group_size, max_group_size, train_split, len(dataset)
+            )
+        )
+        group_size = max_group_size
 
     num_workers = dataloader_config.get("num_workers")
     if num_workers is None:
@@ -166,6 +181,8 @@ def main(args, configs):
     num_param = get_param_num(model)
     Loss = FastSpeech2Loss(preprocess_config, model_config).to(device)
     print("Number of FastSpeech2 Parameters:", num_param)
+    print("Training split:", train_split)
+    print("Training samples:", len(dataset))
     print(
         "Effective global batch per optimizer step:",
         batch_size * grad_acc_step,

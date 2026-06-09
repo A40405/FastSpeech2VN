@@ -47,6 +47,12 @@ def main():
         action="store_true",
         help="Exit non-zero when any fatal alignment issue is found",
     )
+    parser.add_argument(
+        "--sample-limit",
+        type=int,
+        default=0,
+        help="Optional max number of per-sample entries to store in the report. 0 keeps all samples.",
+    )
     args = parser.parse_args()
 
     config = yaml.load(open(args.config, "r", encoding="utf-8"), Loader=yaml.FullLoader)
@@ -141,7 +147,7 @@ def main():
                 report["fatal_reasons"].get("alignment_parse_error", 0) + 1
             )
 
-        if len(report["samples"]) < 100:
+        if args.sample_limit == 0 or len(report["samples"]) < args.sample_limit:
             report["samples"].append(sample)
 
     atomic_write_json(report, args.report_path)

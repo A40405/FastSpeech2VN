@@ -17,4 +17,5 @@ $ErrorActionPreference = "Stop"
 & $PythonExe .\scripts\validate_alignment.py --config .\config\InfoRe1_25hours\preprocess.yaml
 & $PythonExe .\scripts\check_phoneset.py --config .\config\InfoRe1_25hours\preprocess.yaml
 & $PythonExe .\preprocess.py .\config\InfoRe1_25hours\preprocess.yaml
+& $PythonExe .\scripts\build_infore1_clean_subset.py --config .\config\InfoRe1_25hours\preprocess.yaml
 & $PythonExe .\scripts\audit_infore1_preprocessed.py --root .\preprocessed_data\InfoRe1

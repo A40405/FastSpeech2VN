@@ -12,6 +12,8 @@ The Vietnamese frontend now uses an IPA-style phone inventory so the text fronte
 Project-specific documentation for the clean Vietnamese pipeline:
 
 - `docs/README.md`
+- `notebooks/kaggle_fastspeech2vn_train.ipynb`
+- `notebooks/colab_fastspeech2vn_mfa.ipynb`
 - `docs/en/infore1-setup.md`
 - `docs/en/infore1-local-train-guide.md`
 - `docs/en/mfa-vietnamese-alignment.md`
@@ -32,13 +34,51 @@ This clean repo is intended for:
 - GitHub sharing
 - reproducible setup without bundling local data artifacts
 
-For Kaggle, keep the notebook outside the repo and use `requirements-kaggle.txt`.
-The GitHub repo itself does not bundle Kaggle notebooks.
+The repo intentionally does not version local/generated artifacts such as:
+
+- `raw_data/`
+- `corpus/`
+- `mfa_corpus/`
+- `preprocessed_data/`
+- `output/`
+- temporary folders like `.tmp/` and `.tmp-tests/`
+- generated MFA model zips and report JSON files under `mfa_assets/`
+
+For platform usage:
+
+- Colab should run the full preprocessing + MFA flow from source data
+- Kaggle should usually start from a prepared `preprocessed_data/InfoRe1` cache
+- the repo now also includes reference notebooks under `notebooks/` for Colab and Kaggle
 
 For local usage, see:
 
 - `docs/en/infore1-setup.md`
 - `docs/en/infore1-local-train-guide.md`
+
+## InfoRe1 Recommended Flow
+
+For the current InfoRe1 Vietnamese pipeline, the recommended next run is:
+
+1. regenerate or verify MFA alignment
+2. preprocess features
+3. build `train.clean.txt` / `val.clean.txt` from `alignment_validation_report.json`
+4. retrain with the safer preset in `config/InfoRe1_25hours/train.yaml`
+
+The repo now supports configurable split files in `train.yaml`, so you can switch between:
+
+```yaml
+dataset:
+  train_file: "train.txt"
+  val_file: "val.txt"
+```
+
+and:
+
+```yaml
+dataset:
+  train_file: "train.clean.txt"
+  val_file: "val.clean.txt"
+```
 
 ## Vietnamese Frontend Notes
 

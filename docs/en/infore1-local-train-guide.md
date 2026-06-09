@@ -24,6 +24,7 @@ This wrapper script already runs:
 - MFA alignment
 - alignment and phoneset validation
 - FastSpeech2 preprocessing
+- clean split generation for `train.clean.txt` and `val.clean.txt`
 
 Detailed guide:
 
@@ -33,6 +34,36 @@ Detailed guide:
 
 ```powershell
 & $env:PYTHON_EXE .\train.py -p .\config\InfoRe1_25hours\preprocess.yaml -m .\config\InfoRe1_25hours\model.yaml -t .\config\InfoRe1_25hours\train.yaml
+```
+
+`config/InfoRe1_25hours/train.yaml` is now tuned for a safer retrain baseline:
+
+- `batch_size: 4`
+- `grad_acc_step: 4`
+- `group_size: 2`
+- `num_workers: 2`
+- AMP disabled by default for easier diagnosis
+
+## 3.1) Build a cleaner subset before retraining
+
+Once `alignment_validation_report.json` exists, generate stricter train/val splits:
+
+```powershell
+& $env:PYTHON_EXE .\scripts\build_infore1_clean_subset.py --config .\config\InfoRe1_25hours\preprocess.yaml
+```
+
+This writes:
+
+- `preprocessed_data/InfoRe1/train.clean.txt`
+- `preprocessed_data/InfoRe1/val.clean.txt`
+- `preprocessed_data/InfoRe1/clean_subset_report.json`
+
+To train on the clean subset, switch `config/InfoRe1_25hours/train.yaml` to:
+
+```yaml
+dataset:
+  train_file: "train.clean.txt"
+  val_file: "val.clean.txt"
 ```
 
 ## 4) TensorBoard
@@ -58,11 +89,28 @@ Infer:
 ## 6) Important note about this clean repo
 
 The clean repo is mainly prepared for Kaggle and reproducible sharing.
-If your local GPU is weaker than Kaggle T4, you may need to reduce `batch_size` in `config/InfoRe1_25hours/train.yaml`.
+If your local GPU is weaker than Kaggle T4, you may still reduce `batch_size`, but the current preset already favors stability over speed.
 After preprocessing, it is worth checking:
 
 - `preprocessed_data/InfoRe1/alignment_validation_report.json`
+- `preprocessed_data/InfoRe1/clean_subset_report.json`
 - `mfa_assets/phoneset_report.json`
+
+## 6.1) Early checkpoint listening at 8000 / 16000 / 24000
+
+To synthesize the short checkpoint review set:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\evaluate_infore1_checkpoints.ps1 -PythonExe $env:PYTHON_EXE
+```
+
+The script renders:
+
+- `xin chào bạn`
+- `mời bạn ngồi xuống`
+- `hôm nay trời đẹp`
+
+and stores the outputs under `output/result/InfoRe1_eval/step_8000`, `step_16000`, and `step_24000`.
 
 ## 7) Common issues
 

@@ -25,6 +25,13 @@ preprocessing:
     max_one_frame_non_silence_count: 18
     max_one_frame_non_silence_ratio: 0.18
     max_pause_frame_ratio: 0.35
+  clean_subset:
+    min_total_duration_frames: 40
+    max_zero_duration_repaired: 0
+    max_one_frame_non_silence_count: 12
+    max_one_frame_non_silence_ratio: 0.12
+    max_pause_frame_ratio: 0.28
+    max_samples_per_split: 0
   audio:
     sampling_rate: 22050
     max_wav_value: 32768.0

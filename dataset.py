@@ -8,7 +8,6 @@ from torch.utils.data import Dataset
 from text import text_to_sequence
 from utils.tools import pad_1D, pad_2D
 
-
 class Dataset(Dataset):
     def __init__(
         self, filename, preprocess_config, train_config, sort=False, drop_last=False
