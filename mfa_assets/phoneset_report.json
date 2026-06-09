@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-07T09:46:25.380012+00:00",
+  "generated_at": "2026-06-08T13:34:36.955971+00:00",
   "inputs": {
     "dictionary_path": "./mfa_assets/infore1_vi.dict",
     "g2p_model_path": "./mfa_assets/infore1_vi_g2p_model.zip",
@@ -8,7 +8,7 @@
   },
   "summary": {
     "text_phone_count": 56,
-    "dictionary_phone_count": 48,
+    "dictionary_phone_count": 55,
     "symbol_map_phone_count": 56,
     "errors": 0
   },
@@ -17,14 +17,7 @@
   "checks": {
     "dictionary_only_phones": [],
     "text_only_phones": [
-      "c",
-      "d",
-      "kʰ",
-      "sil",
-      "æ",
-      "ð",
-      "ŋ͡m",
-      "ɑ"
+      "sil"
     ],
     "symbol_map_missing_phones": [],
     "symbol_map_extra_phones": [],
