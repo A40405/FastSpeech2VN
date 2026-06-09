@@ -1,6 +1,5 @@
 ﻿import argparse
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -24,6 +23,7 @@ from text.vietnamese import (
     text_to_training_units,
     word_to_phoneme_tokens,
 )
+from utils.lexicon import read_mfa_lexicon
 from utils.model import get_model, get_vocoder
 from utils.tools import synth_samples, to_device
 
@@ -38,15 +38,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def read_lexicon(lex_path):
-    lexicon = {}
-    with open(lex_path, encoding="utf-8") as f:
-        for line in f:
-            temp = re.split(r"\s+", line.strip("\n"))
-            word = temp[0]
-            phones = temp[1:]
-            if word.lower() not in lexicon:
-                lexicon[word.lower()] = phones
-    return lexicon
+    return read_mfa_lexicon(Path(lex_path))
 
 
 def resolve_executable(executable):

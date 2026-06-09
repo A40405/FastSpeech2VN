@@ -1,5 +1,4 @@
 ﻿import os
-import re
 import shutil
 import subprocess
 import tempfile
@@ -18,6 +17,7 @@ from text.vietnamese import (
     text_to_training_units,
     word_to_phoneme_tokens,
 )
+from utils.lexicon import read_mfa_lexicon
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -77,19 +77,7 @@ def load_yaml_config(config_path: str) -> Dict:
 
 
 def read_lexicon(lex_path: Path) -> Dict[str, List[str]]:
-    lexicon: Dict[str, List[str]] = {}
-    if not lex_path.exists():
-        return lexicon
-    with lex_path.open(encoding="utf-8") as f:
-        for line in f:
-            temp = re.split(r"\s+", line.strip("\n"))
-            if len(temp) < 2:
-                continue
-            word = temp[0]
-            phones = temp[1:]
-            if word.lower() not in lexicon:
-                lexicon[word.lower()] = phones
-    return lexicon
+    return read_mfa_lexicon(lex_path)
 
 
 def resolve_executable(executable: str) -> str:
