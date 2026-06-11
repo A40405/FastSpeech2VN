@@ -71,6 +71,7 @@ def build_thresholds(config):
         "max_pause_frame_ratio": float(
             clean_config.get("max_pause_frame_ratio", 0.28)
         ),
+        "max_token_count": int(clean_config.get("max_token_count", 0)),
         "max_samples_per_split": int(clean_config.get("max_samples_per_split", 0)),
     }
 
@@ -115,11 +116,16 @@ def evaluate_sample(sample, thresholds):
 
     quality_metrics = sample.get("quality_metrics", {})
     repaired_counts = sample.get("repaired_counts", {})
+    token_count = int(sample.get("token_count", 0))
 
     if int(quality_metrics.get("total_duration_frames", 0)) < thresholds[
         "min_total_duration_frames"
     ]:
         return False, "too_short_frames"
+    if thresholds.get("max_token_count", 0) > 0 and token_count > thresholds[
+        "max_token_count"
+    ]:
+        return False, "token_count"
     if int(repaired_counts.get("zero_duration_repaired", 0)) > thresholds[
         "max_zero_duration_repaired"
     ]:
@@ -159,7 +165,11 @@ def select_records(records, indexed_report, thresholds):
             )
             continue
 
-        keep, reason = evaluate_sample(sample, thresholds)
+        token_count = len(record["text"][1:-1].split())
+        sample_for_eval = dict(sample)
+        sample_for_eval["token_count"] = token_count
+
+        keep, reason = evaluate_sample(sample_for_eval, thresholds)
         if not keep:
             dropped_counts[reason] = dropped_counts.get(reason, 0) + 1
             continue
@@ -167,6 +177,7 @@ def select_records(records, indexed_report, thresholds):
         kept.append(
             {
                 "record": record,
+                "token_count": token_count,
                 "score": score_sample(
                     sample.get("quality_metrics", {}),
                     sample.get("repaired_counts", {}),
@@ -198,6 +209,7 @@ def summarize_split(name, input_records, kept_records, dropped_counts):
             {
                 "speaker": item["record"]["speaker"],
                 "basename": item["record"]["basename"],
+                "token_count": item["token_count"],
                 "raw_text": item["record"]["raw_text"],
                 "quality_metrics": item["quality_metrics"],
                 "repaired_counts": item["repaired_counts"],

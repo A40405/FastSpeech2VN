@@ -58,6 +58,17 @@ Lệnh này sinh:
 - `preprocessed_data/InfoRe1/val.clean.txt`
 - `preprocessed_data/InfoRe1/clean_subset_report.json`
 
+Bộ clean subset hiện tại được siết chặt hơn cho TTS tiếng Việt câu dài:
+
+- `min_total_duration_frames: 48`
+- `max_zero_duration_repaired: 0`
+- `max_one_frame_non_silence_count: 10`
+- `max_one_frame_non_silence_ratio: 0.10`
+- `max_pause_frame_ratio: 0.25`
+- `max_token_count: 110`
+
+Ngưỡng này sẽ loại bớt các mẫu dài hoặc nhiễu, vốn thường nghe ổn ở đầu câu nhưng càng về sau càng dễ vỡ.
+
 Muốn train trên clean subset, đổi trong `config/InfoRe1_25hours/train.yaml`:
 
 ```yaml
