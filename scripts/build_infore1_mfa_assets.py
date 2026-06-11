@@ -128,7 +128,7 @@ def build_assets(
     augmented_lexicon, added_seed_lexicon = build_augmented_lexicon(lexicon)
 
     write_lexicon(augmented_lexicon, lexicon_path)
-    write_wordlist(lexicon, wordlist_path)
+    write_wordlist(augmented_lexicon, wordlist_path)
     write_g2p_training_data(augmented_lexicon, g2p_train_path)
     write_symbol_map(symbol_map_path)
 

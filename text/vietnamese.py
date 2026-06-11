@@ -323,6 +323,39 @@ FASTSPEECH_SYMBOL_MAP = {
     token: f"{FASTSPEECH_SYMBOL_PREFIX}{token}" for token in VIETNAMESE_IPA_TOKENS
 }
 
+# ASCII abbreviations and letter-by-letter spellings appear frequently in real
+# Vietnamese text (for example: TP, HCM, UBND). If the direct Vietnamese word
+# pronunciation fails, we fall back to a deterministic spelling pronunciation so
+# those items do not collapse to spn in MFA/G2P assets.
+ASCII_LETTER_SPELLINGS = {
+    "a": "a",
+    "b": "bê",
+    "c": "xê",
+    "d": "dê",
+    "e": "e",
+    "f": "ép",
+    "g": "giê",
+    "h": "hát",
+    "i": "i",
+    "j": "giê",
+    "k": "ca",
+    "l": "e lờ",
+    "m": "em",
+    "n": "en",
+    "o": "o",
+    "p": "pê",
+    "q": "quy",
+    "r": "rờ",
+    "s": "ét",
+    "t": "tê",
+    "u": "u",
+    "v": "vê",
+    "w": "vê kép",
+    "x": "ích",
+    "y": "i dài",
+    "z": "dét",
+}
+
 # Synthetic lexicon/G2P seeds keep rarely used frontend symbols reachable in MFA assets
 # without polluting real transcript text or corpus-derived word lists.
 MFA_PHONE_COVERAGE_SEEDS = {
@@ -472,6 +505,20 @@ def split_coda(word):
     return word, None
 
 
+def _spell_ascii_abbreviation(word):
+    if not word or not word.isascii() or not word.isalpha():
+        return None
+
+    spoken_words = []
+    for char in word:
+        spelled = ASCII_LETTER_SPELLINGS.get(char)
+        if spelled is None:
+            return None
+        spoken_words.append(spelled)
+
+    return words_to_phone_tokens(text_to_training_units(" ".join(spoken_words)))
+
+
 def word_to_ipa_tokens(word):
     if not word:
         return []
@@ -499,6 +546,9 @@ def word_to_ipa_tokens(word):
             tokens.append(mapped)
 
     if not any(token in VOWEL_MAP.values() for token in tokens):
+        spelled_tokens = _spell_ascii_abbreviation(normalized)
+        if spelled_tokens:
+            return spelled_tokens
         return ["spn"]
 
     if coda_token:

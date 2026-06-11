@@ -32,6 +32,7 @@ However, it is still not a full copy of the ViMFA repository resources:
 - the frontend remains deterministic inside this repo
 - the G2P model is trained from the exported IPA pronunciation dictionary rather than being copied from ViMFA
 - the acoustic alignment model is trained in the repo workflow rather than bundled from ViMFA
+- ASCII abbreviations and letter-by-letter tokens fall back to a deterministic spelled-out pronunciation instead of collapsing to `spn`, which improves coverage for items like `TP`, `HCM`, and `UBND`
 
 So the project is ViMFA-inspired and structurally closer to a real Vietnamese TTS stack, but it is still self-contained.
 
@@ -98,5 +99,6 @@ The two reports worth checking are:
 - Better alignment quality usually means better duration targets for FastSpeech2.
 - The repo now repairs recoverable zero-duration alignments during preprocess, but every detected and repaired issue is still logged into the JSON reports.
 - When rebuilding `dict` and `g2p.tsv`, the repo injects a small set of synthetic coverage seeds for rare frontend-only IPA symbols so the declared phoneset stays aligned end to end.
+- The generated `wordlist` now follows the augmented lexicon so the MFA word list and pronunciation dictionary stay in sync.
 - If `TextGrid` already exists, you can skip rerunning the MFA stage.
 - The repo is designed so the clean Git version stays shareable and reproducible.

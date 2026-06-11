@@ -26,6 +26,7 @@ Repo này đã đi theo đúng cấu trúc thực dụng của ViMFA:
 - dữ liệu train G2P
 - tài nguyên alignment cho MFA
 - word list và symbol mapping rõ ràng
+- các viết tắt ASCII như `TP`, `HCM`, `UBND` được spell-out deterministic thay vì rơi thẳng về `spn`
 
 
 ## Luồng alignment đầy đủ
@@ -81,5 +82,6 @@ Hai report quan trọng cần xem là:
 - Alignment tốt hơn thường tạo duration target tốt hơn cho FastSpeech2.
 - Repo hiện có bước repair `zero-duration` trong preprocess, nhưng không nuốt lỗi âm thầm: lỗi và số lượng sửa đều được thống kê trong report.
 - Khi rebuild `dict` và `g2p.tsv`, repo sẽ tự thêm một nhóm nhỏ coverage seed cho các IPA symbol hiếm chỉ có trong frontend để phoneset đồng bộ hơn.
+- `wordlist` được sinh từ lexicon augmented nên luôn đi cùng bộ từ điển phát âm.
 - Nếu `TextGrid` đã tồn tại, bạn có thể bỏ qua bước MFA.
 - Repo clean được thiết kế để chia sẻ công khai và tái lập dễ hơn.
