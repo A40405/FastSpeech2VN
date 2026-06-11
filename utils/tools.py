@@ -1,5 +1,6 @@
 import os
 import json
+import re
 
 import torch
 import torch.nn.functional as F
@@ -13,6 +14,24 @@ matplotlib.use("Agg")
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+_INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+
+def sanitize_filename(name, fallback="sample", max_length=120):
+    """
+    Convert arbitrary text into a filesystem-safe filename component.
+
+    This keeps Vietnamese Unicode characters intact while removing characters
+    that are invalid on Windows and trimming trailing dots/spaces.
+    """
+
+    safe = _INVALID_FILENAME_CHARS.sub("_", str(name)).strip(" .")
+    safe = re.sub(r"\s+", " ", safe)
+    safe = re.sub(r"_+", "_", safe)
+    safe = safe[:max_length].strip(" .")
+    return fallback if not safe or not safe.strip("_") else safe
 
 
 def to_device(data, device):
@@ -166,6 +185,7 @@ def synth_samples(targets, predictions, vocoder, model_config, preprocess_config
     basenames = targets[0]
     for i in range(len(predictions[0])):
         basename = basenames[i]
+        safe_basename = sanitize_filename(basename)
         src_len = predictions[8][i].item()
         mel_len = predictions[9][i].item()
         mel_prediction = predictions[1][i, :mel_len].detach().transpose(0, 1)
@@ -194,7 +214,7 @@ def synth_samples(targets, predictions, vocoder, model_config, preprocess_config
             stats,
             ["Synthetized Spectrogram"],
         )
-        plt.savefig(os.path.join(path, "{}.png".format(basename)))
+        plt.savefig(os.path.join(path, "{}.png".format(safe_basename)))
         plt.close()
 
     if vocoder is None:
@@ -210,7 +230,10 @@ def synth_samples(targets, predictions, vocoder, model_config, preprocess_config
 
     sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
     for wav, basename in zip(wav_predictions, basenames):
-        wavfile.write(os.path.join(path, "{}.wav".format(basename)), sampling_rate, wav)
+        safe_basename = sanitize_filename(basename)
+        wavfile.write(
+            os.path.join(path, "{}.wav".format(safe_basename)), sampling_rate, wav
+        )
 
 
 def plot_mel(data, stats, titles):
